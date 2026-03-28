@@ -8,8 +8,8 @@ public static class RolePermissionDefaults
     {
         [UserRole.Admin] = PermissionCatalog.All.Select(x => x.Code).ToArray(),
 
-        [UserRole.Employee] =
-        [
+        [UserRole.Employee] = new[]
+        {
             PermissionCodes.DashboardView,
             PermissionCodes.SuppliersView,
             PermissionCodes.ProjectsView,
@@ -21,10 +21,10 @@ public static class RolePermissionDefaults
             PermissionCodes.PaymentRequestsDelete,
             PermissionCodes.PaymentRequestsSubmit,
             PermissionCodes.PaymentRequestsAttachmentsManage,
-        ],
+        },
 
-        [UserRole.DepartmentManager] =
-        [
+        [UserRole.DepartmentManager] = new[]
+        {
             PermissionCodes.DashboardView,
             PermissionCodes.SuppliersView,
             PermissionCodes.SuppliersCreate,
@@ -46,10 +46,10 @@ public static class RolePermissionDefaults
             PermissionCodes.PaymentRequestsAttachmentsManage,
             PermissionCodes.ApprovalMatricesView,
             PermissionCodes.AuditLogsView,
-        ],
+        },
 
-        [UserRole.Director] =
-        [
+        [UserRole.Director] = new[]
+        {
             PermissionCodes.DashboardView,
             PermissionCodes.SuppliersView,
             PermissionCodes.ProjectsView,
@@ -60,10 +60,10 @@ public static class RolePermissionDefaults
             PermissionCodes.PaymentRequestsReturn,
             PermissionCodes.ApprovalMatricesView,
             PermissionCodes.AuditLogsView,
-        ],
+        },
 
-        [UserRole.Accountant] =
-        [
+        [UserRole.Accountant] = new[]
+        {
             PermissionCodes.DashboardView,
             PermissionCodes.SuppliersView,
             PermissionCodes.ProjectsView,
@@ -75,16 +75,16 @@ public static class RolePermissionDefaults
             PermissionCodes.AccountingConfirmationsConfirm,
             PermissionCodes.AccountingInvoiceAttachmentsManage,
             PermissionCodes.AuditLogsView,
-        ],
+        },
 
-        [UserRole.Viewer] =
-        [
+        [UserRole.Viewer] = new[]
+        {
             PermissionCodes.DashboardView,
             PermissionCodes.SuppliersView,
             PermissionCodes.ProjectsView,
             PermissionCodes.ContractsView,
             PermissionCodes.PaymentRequestsView,
-        ],
+        },
     };
 
     public static IReadOnlyCollection<string> Get(UserRole role)

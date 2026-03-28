@@ -1,0 +1,3 @@
+interface:
+  display_name: "Render Deploy ASP.NET + TiDB"
+  short_description: "Deploy ASP.NET Core to Render with TiDB and fix common deploy/runtime errors"

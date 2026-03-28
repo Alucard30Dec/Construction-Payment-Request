@@ -312,3 +312,49 @@ $env:ConnectionStrings__MySqlConnection="mysql://2MGq6vKV1Xvchpy.root:<PASSWORD>
   - Dừng app, xóa `backend/app.dev.db` (hoặc `backend/app.db`) rồi chạy lại `Ctrl + Shift + B`.
   - Seed user đã được thiết kế dạng upsert trong Development để luôn có:
     - `admin/admin123`, `employee/employee123`, `manager/manager123`, `director/director123`, `accountant/accountant123`.
+
+## 14. Deploy lên Render (Backend + Frontend + TiDB)
+Repo đã có sẵn:
+- `backend/Dockerfile` cho API .NET 8
+- `render.yaml` cho Render Blueprint (2 service: `cpms-api`, `cpms-web`)
+
+### 14.1 Chuẩn bị TiDB connection string (ADO.NET format)
+Không dùng `mysql://...` khi nhập vào Render secret, dùng dạng:
+```text
+Server=<host>;Port=4000;Database=<db>;User Id=<user>;Password=<password>;SslMode=Required;AllowPublicKeyRetrieval=True;ConnectionTimeout=30;DefaultCommandTimeout=60;
+```
+
+### 14.2 Tạo Blueprint trên Render
+1. Push code mới nhất lên GitHub/GitLab.
+2. Trong Render, chọn `New +` -> `Blueprint`.
+3. Chọn repo chứa dự án này, Render sẽ đọc `render.yaml`.
+4. Giữ 2 service mặc định:
+   - `cpms-api` (Docker web service)
+   - `cpms-web` (Static site)
+
+### 14.3 Set biến môi trường bắt buộc
+Trong service `cpms-api`, set:
+- `ConnectionStrings__MySqlConnection` = connection string TiDB thật (secret)
+
+Các biến còn lại đã được khai báo sẵn trong `render.yaml`.
+
+### 14.4 Nếu bạn đổi tên service
+Nếu không dùng đúng tên `cpms-api` và `cpms-web`, cập nhật lại:
+- `cpms-api` -> env `Cors__AllowedOrigins__0`
+- `cpms-web` -> env `VITE_API_BASE_URL`
+
+để khớp domain thực tế của 2 service trên Render.
+
+### 14.5 Verify sau deploy
+Sau khi deploy `Live`, kiểm tra:
+- API health: `https://<api-service>.onrender.com/health`
+- API DB health: `https://<api-service>.onrender.com/health/db`
+- Frontend login: `https://<web-service>.onrender.com/login`
+
+Tài khoản seed mặc định:
+- `admin / admin123`
+- `employee / employee123`
+- `manager / manager123`
+- `director / director123`
+- `accountant / accountant123`
+- `viewer / viewer123`
