@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Text;
 using ConstructionPayment.Application.Interfaces;
 using ConstructionPayment.Infrastructure.Audit;
@@ -12,6 +13,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
+using MySqlConnector;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 
 namespace ConstructionPayment.Infrastructure;
@@ -108,24 +110,185 @@ public static class DependencyInjection
 
     private static string ResolveMySqlConnectionString(IConfiguration configuration)
     {
-        var raw = configuration.GetConnectionString("MySqlConnection")
-            ?? throw new InvalidOperationException("Missing MySQL connection string.");
-
-        raw = raw.Trim();
-
-        if (raw.Contains("<PASSWORD>", StringComparison.OrdinalIgnoreCase))
+        var candidates = new (string? Value, string Source)[]
         {
-            throw new InvalidOperationException("MySQL connection string still contains <PASSWORD>. Please replace with your real password.");
+            (configuration.GetConnectionString("MySqlConnection"), "ConnectionStrings:MySqlConnection"),
+            (configuration["ConnectionStrings:MySqlConnection"], "ConnectionStrings:MySqlConnection"),
+            (configuration["ConnectionStrings__MySqlConnection"], "ConnectionStrings__MySqlConnection"),
+            (configuration["MySqlConnection"], "MySqlConnection"),
+            (configuration["DATABASE_URL"], "DATABASE_URL"),
+            (configuration["MYSQL_URL"], "MYSQL_URL"),
+            (configuration["TIDB_URL"], "TIDB_URL")
+        };
+
+        var errors = new List<string>();
+
+        foreach (var (value, source) in candidates)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                continue;
+            }
+
+            try
+            {
+                var normalized = NormalizeMySqlConnectionString(value);
+                normalized = ExpandEnvironmentVariableAlias(normalized);
+
+                if (normalized.Contains("<PASSWORD>", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException("still contains <PASSWORD> placeholder.");
+                }
+
+                if (normalized.StartsWith("mysql://", StringComparison.OrdinalIgnoreCase))
+                {
+                    return ConvertMySqlUrlToAdoConnectionString(normalized);
+                }
+
+                ValidateAdoConnectionString(normalized);
+                return normalized;
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"{source}: {ex.Message}");
+            }
         }
 
-        if (!raw.StartsWith("mysql://", StringComparison.OrdinalIgnoreCase))
+        if (errors.Count == 0)
         {
-            return raw;
+            throw new InvalidOperationException(
+                "Missing MySQL connection string. Set `ConnectionStrings__MySqlConnection` " +
+                "(or `DATABASE_URL`) in environment variables.");
         }
 
-        if (!Uri.TryCreate(raw, UriKind.Absolute, out var uri))
+        throw new InvalidOperationException(
+            "MySQL connection string is invalid. " +
+            string.Join(" | ", errors));
+    }
+
+    private static string NormalizeMySqlConnectionString(string raw)
+    {
+        var normalized = raw.Trim().Trim('"').Trim();
+
+        if (TryStripPrefixedAssignment(normalized, out var stripped))
         {
-            throw new InvalidOperationException("Invalid mysql:// URL format.");
+            normalized = stripped;
+        }
+
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            throw new InvalidOperationException("is empty.");
+        }
+
+        if (LooksLikeConnectionStringKeyOnly(normalized))
+        {
+            throw new InvalidOperationException(
+                $"value looks like an environment variable key (`{normalized}`) instead of a real connection string.");
+        }
+
+        return normalized;
+    }
+
+    private static string ExpandEnvironmentVariableAlias(string value)
+    {
+        // Hỗ trợ cấu hình dạng alias: DATABASE_URL, $DATABASE_URL, ${DATABASE_URL}.
+        if (!TryGetEnvironmentVariableAlias(value, out var alias))
+        {
+            return value;
+        }
+
+        var aliasValue = FindEnvironmentVariableValue(alias);
+
+        if (string.IsNullOrWhiteSpace(aliasValue))
+        {
+            return value;
+        }
+
+        var normalizedAliasValue = aliasValue.Trim().Trim('"').Trim();
+
+        // Tránh tự tham chiếu vòng lặp kiểu `ConnectionStrings__MySqlConnection=ConnectionStrings__MySqlConnection`.
+        if (string.Equals(normalizedAliasValue, value, StringComparison.OrdinalIgnoreCase))
+        {
+            return value;
+        }
+
+        return normalizedAliasValue;
+    }
+
+    private static string? FindEnvironmentVariableValue(string alias)
+    {
+        var direct = Environment.GetEnvironmentVariable(alias);
+        if (!string.IsNullOrWhiteSpace(direct))
+        {
+            return direct;
+        }
+
+        var allVars = Environment.GetEnvironmentVariables();
+        foreach (DictionaryEntry entry in allVars)
+        {
+            if (entry.Key is not string key || entry.Value is not string val)
+            {
+                continue;
+            }
+
+            if (key.Equals(alias, StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(val))
+            {
+                return val;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool TryGetEnvironmentVariableAlias(string value, out string alias)
+    {
+        alias = string.Empty;
+
+        var candidate = value.Trim();
+        if (candidate.StartsWith("${", StringComparison.Ordinal) && candidate.EndsWith('}'))
+        {
+            candidate = candidate[2..^1].Trim();
+        }
+        else if (candidate.StartsWith('$'))
+        {
+            candidate = candidate[1..].Trim();
+        }
+
+        if (string.IsNullOrWhiteSpace(candidate)
+            || candidate.Contains(';')
+            || candidate.Contains("://", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        foreach (var ch in candidate)
+        {
+            if (!(char.IsLetterOrDigit(ch) || ch == '_' || ch == ':'))
+            {
+                return false;
+            }
+        }
+
+        alias = candidate;
+        return true;
+    }
+
+    private static bool LooksLikeConnectionStringKeyOnly(string value)
+    {
+        return value.Equals("ConnectionStrings__MySqlConnection", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("ConnectionStrings:MySqlConnection", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("MySqlConnection", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("DATABASE_URL", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("MYSQL_URL", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("TIDB_URL", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string ConvertMySqlUrlToAdoConnectionString(string mysqlUrl)
+    {
+        if (!Uri.TryCreate(mysqlUrl, UriKind.Absolute, out var uri))
+        {
+            throw new InvalidOperationException("invalid mysql:// URL format.");
         }
 
         var userInfo = uri.UserInfo.Split(':', 2, StringSplitOptions.None);
@@ -134,14 +297,51 @@ public static class DependencyInjection
         var database = uri.AbsolutePath.Trim('/');
         var port = uri.Port > 0 ? uri.Port : 3306;
 
-        if (string.IsNullOrWhiteSpace(uri.Host) ||
-            string.IsNullOrWhiteSpace(username) ||
-            string.IsNullOrWhiteSpace(database))
+        if (string.IsNullOrWhiteSpace(uri.Host)
+            || string.IsNullOrWhiteSpace(username)
+            || string.IsNullOrWhiteSpace(database))
         {
             throw new InvalidOperationException("mysql:// URL must include host, username and database.");
         }
 
         return $"Server={uri.Host};Port={port};Database={database};User Id={username};Password={password};SslMode=Required;AllowPublicKeyRetrieval=true;";
+    }
+
+    private static void ValidateAdoConnectionString(string connectionString)
+    {
+        var builder = new MySqlConnectionStringBuilder(connectionString);
+
+        if (string.IsNullOrWhiteSpace(builder.Server))
+        {
+            throw new InvalidOperationException("missing Server in ADO.NET connection string.");
+        }
+
+        if (string.IsNullOrWhiteSpace(builder.Database))
+        {
+            throw new InvalidOperationException("missing Database in ADO.NET connection string.");
+        }
+    }
+
+    private static bool TryStripPrefixedAssignment(string value, out string stripped)
+    {
+        stripped = string.Empty;
+
+        var equalsIndex = value.IndexOf('=');
+        if (equalsIndex <= 0 || equalsIndex >= value.Length - 1)
+        {
+            return false;
+        }
+
+        var key = value[..equalsIndex].Trim();
+        if (!key.Equals("ConnectionStrings__MySqlConnection", StringComparison.OrdinalIgnoreCase)
+            && !key.Equals("ConnectionStrings:MySqlConnection", StringComparison.OrdinalIgnoreCase)
+            && !key.Equals("MySqlConnection", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        stripped = value[(equalsIndex + 1)..].Trim();
+        return true;
     }
 
     private static void ConfigureAuthentication(IServiceCollection services, IConfiguration configuration)

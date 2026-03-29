@@ -297,6 +297,12 @@ $env:ConnectionStrings__MySqlConnection="mysql://2MGq6vKV1Xvchpy.root:<PASSWORD>
   - Kiểm tra `ConnectionStrings:MySqlConnection` đúng host/user/password/db.
   - Khởi động lại backend để app tự `Migrate + SeedDemoData`.
   - Gọi `http://localhost:5000/health/db` để xác nhận `status = ok`.
+- Lỗi `Option 'connectionstrings__mysqlconnection' not supported` khi deploy:
+  - Bạn đang nhập sai **Value** của biến môi trường.
+  - Trên Render:
+    - `Key`: `ConnectionStrings__MySqlConnection`
+    - `Value`: chỉ dán chuỗi kết nối thật (không dán `ConnectionStrings__MySqlConnection=...`, không dán `connectionstrings__mysqlconnection`).
+  - App cũng hỗ trợ đọc từ `DATABASE_URL` / `MYSQL_URL` / `TIDB_URL` nếu bạn muốn dùng alias env.
 - Lỗi `[DEV] FileNotFoundException: Pomelo.EntityFrameworkCore.MySql...`:
   - Đã thêm cơ chế fallback SQLite trong Development để không chặn đăng nhập.
   - Chạy lại `Ctrl + Shift + B` (task đã thêm bước `backend: build` trước `watch`).
@@ -335,8 +341,13 @@ Server=<host>;Port=4000;Database=<db>;User Id=<user>;Password=<password>;SslMode
 ### 14.3 Set biến môi trường bắt buộc
 Trong service `cpms-api`, set:
 - `ConnectionStrings__MySqlConnection` = connection string TiDB thật (secret)
+  - hoặc dùng alias: `DATABASE_URL` / `MYSQL_URL` / `TIDB_URL`
 
 Các biến còn lại đã được khai báo sẵn trong `render.yaml`.
+
+Lưu ý quan trọng:
+- Ở Render, `Key` là `ConnectionStrings__MySqlConnection`.
+- `Value` chỉ dán phần connection string, **không** dán theo dạng `ConnectionStrings__MySqlConnection=...`.
 
 ### 14.4 Nếu bạn đổi tên service
 Nếu không dùng đúng tên `cpms-api` và `cpms-web`, cập nhật lại:
