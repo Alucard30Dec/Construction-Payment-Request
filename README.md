@@ -322,7 +322,7 @@ $env:ConnectionStrings__MySqlConnection="mysql://2MGq6vKV1Xvchpy.root:<PASSWORD>
 ## 14. Deploy lên Render (1 link duy nhất + TiDB)
 Repo đã có sẵn:
 - `backend/Dockerfile`: build frontend React và nhúng vào `wwwroot` của API .NET
-- `render.yaml`: Blueprint chỉ còn 1 service `cpms-api`
+- `render.yaml`: Blueprint chỉ còn 1 service `construction-payment-request`
 
 ### 14.1 Chuẩn bị TiDB connection string (ADO.NET format)
 Không dùng `mysql://...` khi nhập vào Render secret, dùng dạng:
@@ -334,10 +334,10 @@ Server=<host>;Port=4000;Database=<db>;User Id=<user>;Password=<password>;SslMode
 1. Push code mới nhất lên GitHub/GitLab.
 2. Trong Render, chọn `New +` -> `Blueprint`.
 3. Chọn repo chứa dự án này, Render sẽ đọc `render.yaml`.
-4. Deploy service duy nhất `cpms-api` (Docker web service).
+4. Deploy service duy nhất `construction-payment-request` (Docker web service).
 
 ### 14.3 Set biến môi trường bắt buộc
-Trong service `cpms-api`, set:
+Trong service `construction-payment-request`, set:
 - `ConnectionStrings__MySqlConnection` = connection string TiDB thật (secret)
   - hoặc dùng alias: `DATABASE_URL` / `MYSQL_URL` / `TIDB_URL`
 
@@ -348,7 +348,7 @@ Lưu ý quan trọng:
 - `Value` chỉ dán phần connection string, **không** dán theo dạng `ConnectionStrings__MySqlConnection=...`.
 
 ### 14.4 Nếu bạn đổi tên service
-Nếu không dùng tên `cpms-api`, cập nhật env `Cors__AllowedOrigins__0` cho khớp domain thực tế.
+Nếu không dùng tên `construction-payment-request`, cập nhật env `Cors__AllowedOrigins__0` cho khớp domain thực tế.
 
 ### 14.5 Verify sau deploy
 Sau khi deploy `Live`, kiểm tra:

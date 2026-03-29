@@ -151,7 +151,7 @@ export function AdminLayout() {
             </div>
             <div className="app-brand-text">
               <strong>CPMS</strong>
-              <span>Construction Payment</span>
+              <span>Construction Payment Request</span>
             </div>
           </Space>
         </div>

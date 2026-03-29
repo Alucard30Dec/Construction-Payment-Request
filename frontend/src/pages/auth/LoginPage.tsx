@@ -39,7 +39,7 @@ export function LoginPage() {
       <div className="login-panel">
         <div className="login-visual">
           <img src={loginGraphic} alt="Construction Illustration" />
-          <Typography.Title level={3}>Construction Payment Management</Typography.Title>
+          <Typography.Title level={3}>Construction Payment Request</Typography.Title>
           <Typography.Text>
             Theo dõi hồ sơ thanh toán xây dựng, duyệt nhiều cấp và kiểm soát chứng từ tập trung.
           </Typography.Text>

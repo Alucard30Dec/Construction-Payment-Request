@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: cpms-api
+    name: construction-payment-request
     runtime: docker
     plan: free
     rootDir: .
@@ -28,6 +28,6 @@ services:
       - key: Jwt__Audience
         value: ConstructionPayment.Frontend
       - key: Cors__AllowedOrigins__0
-        value: https://cpms-api.onrender.com
+        value: https://construction-payment-request.onrender.com
       - key: Storage__UploadPath
         value: /tmp/cpms-uploads
