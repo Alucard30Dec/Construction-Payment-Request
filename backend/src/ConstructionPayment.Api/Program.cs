@@ -113,6 +113,8 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 
 var app = builder.Build();
 var bootstrapDatabaseOnly = args.Any(x => string.Equals(x, "--bootstrap-db", StringComparison.OrdinalIgnoreCase));
+var spaIndexFilePath = Path.Combine(app.Environment.WebRootPath ?? string.Empty, "index.html");
+var hasSpaBuild = File.Exists(spaIndexFilePath);
 
 app.UseForwardedHeaders();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
@@ -346,6 +348,12 @@ if (bootstrapDatabaseOnly)
     return;
 }
 
+if (hasSpaBuild)
+{
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
+}
+
 app.UseCors("AppCors");
 app.UseAuthentication();
 app.UseAuthorization();
@@ -394,5 +402,23 @@ app.MapGet("/health/db", async (AppDbContext dbContext, CancellationToken cancel
         }, statusCode: 500);
     }
 });
+
+if (hasSpaBuild)
+{
+    app.MapFallback(async context =>
+    {
+        var path = context.Request.Path;
+
+        if (path.StartsWithSegments("/api")
+            || path.StartsWithSegments("/health"))
+        {
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+            return;
+        }
+
+        context.Response.ContentType = "text/html; charset=utf-8";
+        await context.Response.SendFileAsync(spaIndexFilePath);
+    });
+}
 
 app.Run();

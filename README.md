@@ -319,10 +319,10 @@ $env:ConnectionStrings__MySqlConnection="mysql://2MGq6vKV1Xvchpy.root:<PASSWORD>
   - Seed user đã được thiết kế dạng upsert trong Development để luôn có:
     - `admin/admin123`, `employee/employee123`, `manager/manager123`, `director/director123`, `accountant/accountant123`.
 
-## 14. Deploy lên Render (Backend + Frontend + TiDB)
+## 14. Deploy lên Render (1 link duy nhất + TiDB)
 Repo đã có sẵn:
-- `backend/Dockerfile` cho API .NET 8
-- `render.yaml` cho Render Blueprint (2 service: `cpms-api`, `cpms-web`)
+- `backend/Dockerfile`: build frontend React và nhúng vào `wwwroot` của API .NET
+- `render.yaml`: Blueprint chỉ còn 1 service `cpms-api`
 
 ### 14.1 Chuẩn bị TiDB connection string (ADO.NET format)
 Không dùng `mysql://...` khi nhập vào Render secret, dùng dạng:
@@ -334,9 +334,7 @@ Server=<host>;Port=4000;Database=<db>;User Id=<user>;Password=<password>;SslMode
 1. Push code mới nhất lên GitHub/GitLab.
 2. Trong Render, chọn `New +` -> `Blueprint`.
 3. Chọn repo chứa dự án này, Render sẽ đọc `render.yaml`.
-4. Giữ 2 service mặc định:
-   - `cpms-api` (Docker web service)
-   - `cpms-web` (Static site)
+4. Deploy service duy nhất `cpms-api` (Docker web service).
 
 ### 14.3 Set biến môi trường bắt buộc
 Trong service `cpms-api`, set:
@@ -350,17 +348,13 @@ Lưu ý quan trọng:
 - `Value` chỉ dán phần connection string, **không** dán theo dạng `ConnectionStrings__MySqlConnection=...`.
 
 ### 14.4 Nếu bạn đổi tên service
-Nếu không dùng đúng tên `cpms-api` và `cpms-web`, cập nhật lại:
-- `cpms-api` -> env `Cors__AllowedOrigins__0`
-- `cpms-web` -> env `VITE_API_BASE_URL`
-
-để khớp domain thực tế của 2 service trên Render.
+Nếu không dùng tên `cpms-api`, cập nhật env `Cors__AllowedOrigins__0` cho khớp domain thực tế.
 
 ### 14.5 Verify sau deploy
 Sau khi deploy `Live`, kiểm tra:
+- App (frontend + backend chung 1 domain): `https://<api-service>.onrender.com/login`
 - API health: `https://<api-service>.onrender.com/health`
 - API DB health: `https://<api-service>.onrender.com/health/db`
-- Frontend login: `https://<web-service>.onrender.com/login`
 
 Tài khoản seed mặc định:
 - `admin / admin123`

@@ -3,8 +3,8 @@ services:
     name: cpms-api
     runtime: docker
     plan: free
-    rootDir: backend
-    dockerfilePath: ./Dockerfile
+    rootDir: .
+    dockerfilePath: ./backend/Dockerfile
     dockerContext: .
     autoDeploy: true
     healthCheckPath: /health
@@ -28,20 +28,6 @@ services:
       - key: Jwt__Audience
         value: ConstructionPayment.Frontend
       - key: Cors__AllowedOrigins__0
-        value: https://cpms-web.onrender.com
+        value: https://cpms-api.onrender.com
       - key: Storage__UploadPath
         value: /tmp/cpms-uploads
-
-  - type: web
-    name: cpms-web
-    runtime: static
-    rootDir: frontend
-    buildCommand: npm ci && npm run build
-    staticPublishPath: ./dist
-    envVars:
-      - key: VITE_API_BASE_URL
-        value: https://cpms-api.onrender.com/api
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
