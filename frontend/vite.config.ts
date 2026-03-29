@@ -7,6 +7,22 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    optimizeDeps: {
+      include: ['react', 'react-dom', 'react-router-dom', 'antd', '@tanstack/react-query', 'axios'],
+    },
+    build: {
+      sourcemap: false,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            react: ['react', 'react-dom', 'react-router-dom'],
+            antd: ['antd', '@ant-design/icons'],
+            query: ['@tanstack/react-query'],
+            axios: ['axios'],
+          },
+        },
+      },
+    },
     server: {
       port: 5173,
       host: true,

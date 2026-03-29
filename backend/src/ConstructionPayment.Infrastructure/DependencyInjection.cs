@@ -33,7 +33,7 @@ public static class DependencyInjection
         var allowSqliteFallbackInDevelopment =
             configuration.GetValue<bool?>("Database:AllowSqliteFallbackInDevelopment") ?? true;
 
-        services.AddDbContext<AppDbContext>(options =>
+        services.AddDbContextPool<AppDbContext>(options =>
         {
             if (string.Equals(databaseProvider, "SqlServer", StringComparison.OrdinalIgnoreCase))
             {

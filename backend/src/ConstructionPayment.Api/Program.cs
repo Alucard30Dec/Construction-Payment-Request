@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Text.Json.Serialization;
 using ConstructionPayment.Application;
 using ConstructionPayment.Application.Interfaces;
@@ -8,7 +9,9 @@ using ConstructionPayment.Api.Middleware;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -104,6 +107,20 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddAuthorization();
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
+{
+    options.Level = CompressionLevel.Fastest;
+});
+builder.Services.Configure<GzipCompressionProviderOptions>(options =>
+{
+    options.Level = CompressionLevel.Fastest;
+});
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -118,6 +135,7 @@ var hasSpaBuild = File.Exists(spaIndexFilePath);
 
 app.UseForwardedHeaders();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseResponseCompression();
 
 if (app.Environment.IsDevelopment())
 {
@@ -351,7 +369,31 @@ if (bootstrapDatabaseOnly)
 if (hasSpaBuild)
 {
     app.UseDefaultFiles();
-    app.UseStaticFiles();
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        OnPrepareResponse = context =>
+        {
+            var requestPath = context.Context.Request.Path;
+            var headers = context.Context.Response.Headers;
+            var fileName = Path.GetFileName(context.File.Name);
+
+            if (fileName.Equals("index.html", StringComparison.OrdinalIgnoreCase))
+            {
+                headers[HeaderNames.CacheControl] = "no-cache, no-store, must-revalidate";
+                headers[HeaderNames.Pragma] = "no-cache";
+                headers[HeaderNames.Expires] = "0";
+                return;
+            }
+
+            if (requestPath.StartsWithSegments("/assets"))
+            {
+                headers[HeaderNames.CacheControl] = "public, max-age=31536000, immutable";
+                return;
+            }
+
+            headers[HeaderNames.CacheControl] = "public, max-age=3600";
+        }
+    });
 }
 
 app.UseCors("AppCors");

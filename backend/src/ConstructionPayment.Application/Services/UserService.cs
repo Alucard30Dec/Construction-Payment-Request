@@ -35,13 +35,13 @@ public class UserService : IUserService
     {
         var query = _dbContext.Users
             .AsNoTracking()
-            .Include(x => x.RoleProfile)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
-            var keyword = request.Search.Trim().ToLower();
-            query = query.Where(x => x.Username.ToLower().Contains(keyword) || x.FullName.ToLower().Contains(keyword));
+            var keyword = request.Search.Trim();
+            var pattern = $"%{keyword}%";
+            query = query.Where(x => EF.Functions.Like(x.Username, pattern) || EF.Functions.Like(x.FullName, pattern));
         }
 
         if (request.Role.HasValue)
@@ -54,9 +54,24 @@ public class UserService : IUserService
             query = query.Where(x => x.IsActive == request.IsActive.Value);
         }
 
-        query = query.OrderByDescending(x => x.CreatedAt);
+        query = query
+            .OrderByDescending(x => x.CreatedAt)
+            .ThenByDescending(x => x.Id);
 
-        return await query.ToPagedResultAsync(request.PageNumber, request.PageSize, x => x.ToDto(), cancellationToken);
+        return await query.ToPagedResultProjectedAsync(request.PageNumber, request.PageSize, x => new UserDto
+        {
+            Id = x.Id,
+            Username = x.Username,
+            FullName = x.FullName,
+            Email = x.Email,
+            Role = x.Role,
+            RoleProfileId = x.RoleProfileId,
+            RoleProfileCode = x.RoleProfile != null ? x.RoleProfile.Code : null,
+            RoleProfileName = x.RoleProfile != null ? x.RoleProfile.Name : null,
+            Department = x.Department,
+            IsActive = x.IsActive,
+            CreatedAt = x.CreatedAt
+        }, cancellationToken);
     }
 
     public async Task<UserDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)

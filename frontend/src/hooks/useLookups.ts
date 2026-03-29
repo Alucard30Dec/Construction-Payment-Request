@@ -10,6 +10,9 @@ export function useSupplierLookup() {
       const result = await supplierService.getPaged({ pageNumber: 1, pageSize: 200, isActive: true });
       return result.items;
     },
+    staleTime: 5 * 60_000,
+    gcTime: 15 * 60_000,
+    refetchOnMount: false,
   });
 }
 
@@ -20,6 +23,9 @@ export function useProjectLookup() {
       const result = await projectService.getPaged({ pageNumber: 1, pageSize: 200, isActive: true });
       return result.items;
     },
+    staleTime: 5 * 60_000,
+    gcTime: 15 * 60_000,
+    refetchOnMount: false,
   });
 }
 
@@ -30,5 +36,8 @@ export function useContractLookup() {
       const result = await contractService.getPaged({ pageNumber: 1, pageSize: 200, isActive: true });
       return result.items;
     },
+    staleTime: 5 * 60_000,
+    gcTime: 15 * 60_000,
+    refetchOnMount: false,
   });
 }

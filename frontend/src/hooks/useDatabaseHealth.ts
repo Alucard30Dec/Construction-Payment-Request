@@ -5,7 +5,9 @@ export function useDatabaseHealth() {
   return useQuery({
     queryKey: ['db-health'],
     queryFn: ({ signal }) => systemHealthService.getDatabaseHealth(signal),
-    staleTime: 15_000,
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+    refetchOnMount: false,
     refetchInterval: false,
     retry: 0,
   });

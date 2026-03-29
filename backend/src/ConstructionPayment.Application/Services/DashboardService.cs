@@ -17,44 +17,41 @@ public class DashboardService : IDashboardService
     public async Task<DashboardSummaryDto> GetSummaryAsync(CancellationToken cancellationToken = default)
     {
         var paymentRequests = _dbContext.PaymentRequests.AsNoTracking();
-
-        var totalRequests = await paymentRequests.CountAsync(cancellationToken);
-
-        var pendingStatuses = new[]
-        {
-            PaymentRequestStatus.PendingDepartmentApproval,
-            PaymentRequestStatus.PendingDirectorApproval,
-            PaymentRequestStatus.PendingAccounting
-        };
-
-        var pendingApprovalCount = await paymentRequests
-            .Where(x => pendingStatuses.Contains(x.CurrentStatus))
-            .CountAsync(cancellationToken);
-
-        var paidCount = await paymentRequests
-            .Where(x => x.CurrentStatus == PaymentRequestStatus.Paid)
-            .CountAsync(cancellationToken);
-
         var today = DateTime.UtcNow.Date;
-        var overdueCount = await paymentRequests
-            .Where(x => x.DueDate.Date < today && x.CurrentStatus != PaymentRequestStatus.Paid)
-            .CountAsync(cancellationToken);
+        var dueSoonEndExclusive = today.AddDays(8);
 
-        var dueSoonCount = await paymentRequests
-            .Where(x =>
-                x.DueDate.Date >= today &&
-                x.DueDate.Date <= today.AddDays(7) &&
-                x.CurrentStatus != PaymentRequestStatus.Paid)
-            .CountAsync(cancellationToken);
+        var aggregated = await paymentRequests
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                TotalRequests = g.Count(),
+                PendingApprovalCount = g.Count(x =>
+                    x.CurrentStatus == PaymentRequestStatus.PendingDepartmentApproval ||
+                    x.CurrentStatus == PaymentRequestStatus.PendingDirectorApproval ||
+                    x.CurrentStatus == PaymentRequestStatus.PendingAccounting),
+                PaidCount = g.Count(x => x.CurrentStatus == PaymentRequestStatus.Paid),
+                OverdueCount = g.Count(x => x.DueDate < today && x.CurrentStatus != PaymentRequestStatus.Paid),
+                DueSoonCount = g.Count(x =>
+                    x.DueDate >= today &&
+                    x.DueDate < dueSoonEndExclusive &&
+                    x.CurrentStatus != PaymentRequestStatus.Paid),
+                TotalRequestedAmount = g.Sum(x => (decimal?)x.RequestedAmount) ?? 0,
+                PaidAmount = g.Where(x => x.CurrentStatus == PaymentRequestStatus.Paid)
+                    .Sum(x => (decimal?)x.RequestedAmount) ?? 0,
+                ApprovedCount = g.Count(x =>
+                    x.CurrentStatus == PaymentRequestStatus.PendingAccounting ||
+                    x.CurrentStatus == PaymentRequestStatus.Paid)
+            })
+            .FirstOrDefaultAsync(cancellationToken);
 
-        var totalRequestedAmount = await paymentRequests.SumAsync(x => (decimal?)x.RequestedAmount, cancellationToken) ?? 0;
-        var paidAmount = await paymentRequests
-            .Where(x => x.CurrentStatus == PaymentRequestStatus.Paid)
-            .SumAsync(x => (decimal?)x.RequestedAmount, cancellationToken) ?? 0;
-
-        var approvedCount = await paymentRequests
-            .Where(x => x.CurrentStatus == PaymentRequestStatus.PendingAccounting || x.CurrentStatus == PaymentRequestStatus.Paid)
-            .CountAsync(cancellationToken);
+        var totalRequests = aggregated?.TotalRequests ?? 0;
+        var pendingApprovalCount = aggregated?.PendingApprovalCount ?? 0;
+        var paidCount = aggregated?.PaidCount ?? 0;
+        var overdueCount = aggregated?.OverdueCount ?? 0;
+        var dueSoonCount = aggregated?.DueSoonCount ?? 0;
+        var totalRequestedAmount = aggregated?.TotalRequestedAmount ?? 0;
+        var paidAmount = aggregated?.PaidAmount ?? 0;
+        var approvedCount = aggregated?.ApprovedCount ?? 0;
 
         var approvalRatePercent = totalRequests == 0
             ? 0
@@ -100,7 +97,6 @@ public class DashboardService : IDashboardService
             .ToListAsync(cancellationToken);
 
         var amountByProject = await paymentRequests
-            .Include(x => x.Project)
             .GroupBy(x => new { x.ProjectId, ProjectName = x.Project != null ? x.Project.Name : string.Empty })
             .Select(g => new GroupAmountSummaryDto
             {
@@ -113,7 +109,6 @@ public class DashboardService : IDashboardService
             .ToListAsync(cancellationToken);
 
         var amountBySupplier = await paymentRequests
-            .Include(x => x.Supplier)
             .GroupBy(x => new { x.SupplierId, SupplierName = x.Supplier != null ? x.Supplier.Name : string.Empty })
             .Select(g => new GroupAmountSummaryDto
             {
@@ -126,9 +121,7 @@ public class DashboardService : IDashboardService
             .ToListAsync(cancellationToken);
 
         var overdueRequestsRaw = await paymentRequests
-            .Include(x => x.Project)
-            .Include(x => x.Supplier)
-            .Where(x => x.DueDate.Date < today && x.CurrentStatus != PaymentRequestStatus.Paid)
+            .Where(x => x.DueDate < today && x.CurrentStatus != PaymentRequestStatus.Paid)
             .OrderBy(x => x.DueDate)
             .Take(10)
             .Select(x => new

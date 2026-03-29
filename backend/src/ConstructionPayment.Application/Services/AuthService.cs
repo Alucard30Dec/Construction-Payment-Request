@@ -27,11 +27,21 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
     {
-        var normalizedUsername = request.Username.Trim().ToLowerInvariant();
+        var inputUsername = request.Username.Trim();
 
         var user = await _dbContext.Users
             .Include(x => x.RoleProfile)
-            .FirstOrDefaultAsync(x => x.Username.ToLower() == normalizedUsername, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Username == inputUsername, cancellationToken);
+
+        // Fallback để giữ tương thích đăng nhập không phân biệt hoa/thường.
+        if (user is null)
+        {
+            var normalizedUsername = inputUsername.ToLowerInvariant();
+
+            user = await _dbContext.Users
+                .Include(x => x.RoleProfile)
+                .FirstOrDefaultAsync(x => x.Username.ToLower() == normalizedUsername, cancellationToken);
+        }
 
         if (user is null || !user.IsActive)
         {

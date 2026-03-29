@@ -27,11 +27,12 @@ public class SupplierService : ISupplierService
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
-            var keyword = request.Search.Trim().ToLower();
+            var keyword = request.Search.Trim();
+            var pattern = $"%{keyword}%";
             query = query.Where(x =>
-                x.Code.ToLower().Contains(keyword) ||
-                x.Name.ToLower().Contains(keyword) ||
-                x.TaxCode.ToLower().Contains(keyword));
+                EF.Functions.Like(x.Code, pattern) ||
+                EF.Functions.Like(x.Name, pattern) ||
+                EF.Functions.Like(x.TaxCode, pattern));
         }
 
         if (request.IsActive.HasValue)
@@ -39,9 +40,28 @@ public class SupplierService : ISupplierService
             query = query.Where(x => x.IsActive == request.IsActive.Value);
         }
 
-        query = query.OrderByDescending(x => x.CreatedAt);
+        query = query
+            .OrderByDescending(x => x.CreatedAt)
+            .ThenByDescending(x => x.Id);
 
-        return await query.ToPagedResultAsync(request.PageNumber, request.PageSize, x => x.ToDto(), cancellationToken);
+        return await query.ToPagedResultProjectedAsync(request.PageNumber, request.PageSize, x => new SupplierDto
+        {
+            Id = x.Id,
+            Code = x.Code,
+            Name = x.Name,
+            TaxCode = x.TaxCode,
+            Address = x.Address,
+            ContactPerson = x.ContactPerson,
+            Phone = x.Phone,
+            Email = x.Email,
+            BankAccountNumber = x.BankAccountNumber,
+            BankName = x.BankName,
+            BankBranch = x.BankBranch,
+            Notes = x.Notes,
+            IsActive = x.IsActive,
+            CreatedAt = x.CreatedAt,
+            UpdatedAt = x.UpdatedAt
+        }, cancellationToken);
     }
 
     public async Task<SupplierDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)

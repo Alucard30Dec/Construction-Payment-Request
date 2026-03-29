@@ -37,6 +37,8 @@ public class AppDbContext : DbContext, IAppDbContext
             builder.Property(x => x.Department).HasMaxLength(100);
             builder.HasIndex(x => x.Username).IsUnique();
             builder.HasIndex(x => x.RoleProfileId);
+            builder.HasIndex(x => new { x.Role, x.IsActive, x.CreatedAt });
+            builder.HasIndex(x => x.CreatedAt);
 
             builder.HasOne(x => x.RoleProfile)
                 .WithMany(x => x.Users)
@@ -109,6 +111,10 @@ public class AppDbContext : DbContext, IAppDbContext
             builder.Property(x => x.Notes).HasMaxLength(1000);
             builder.Property(x => x.AttachmentPath).HasMaxLength(500);
             builder.HasIndex(x => x.ContractNumber).IsUnique();
+            builder.HasIndex(x => x.CreatedAt);
+            builder.HasIndex(x => new { x.IsActive, x.CreatedAt });
+            builder.HasIndex(x => new { x.SupplierId, x.CreatedAt });
+            builder.HasIndex(x => new { x.ProjectId, x.CreatedAt });
 
             builder.HasOne(x => x.Supplier)
                 .WithMany(x => x.Contracts)
@@ -144,6 +150,10 @@ public class AppDbContext : DbContext, IAppDbContext
             builder.HasIndex(x => x.RequestCode).IsUnique();
             builder.HasIndex(x => new { x.SupplierId, x.InvoiceNumber });
             builder.HasIndex(x => x.CurrentStatus);
+            builder.HasIndex(x => x.CreatedAt);
+            builder.HasIndex(x => new { x.CurrentStatus, x.CreatedAt });
+            builder.HasIndex(x => new { x.ProjectId, x.CreatedAt });
+            builder.HasIndex(x => new { x.SupplierId, x.CreatedAt });
 
             builder.HasOne(x => x.Project)
                 .WithMany(x => x.PaymentRequests)
@@ -236,6 +246,8 @@ public class AppDbContext : DbContext, IAppDbContext
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasIndex(x => new { x.IsActive, x.MinAmount, x.MaxAmount });
+            builder.HasIndex(x => new { x.ProjectId, x.IsActive, x.MinAmount });
+            builder.HasIndex(x => new { x.Department, x.IsActive, x.MinAmount });
         });
 
         modelBuilder.Entity<PaymentConfirmation>(builder =>
@@ -270,6 +282,9 @@ public class AppDbContext : DbContext, IAppDbContext
 
             builder.HasIndex(x => x.CreatedAt);
             builder.HasIndex(x => new { x.EntityName, x.EntityId });
+            builder.HasIndex(x => new { x.UserId, x.CreatedAt });
+            builder.HasIndex(x => new { x.Action, x.CreatedAt });
+            builder.HasIndex(x => new { x.EntityName, x.CreatedAt });
         });
 
         base.OnModelCreating(modelBuilder);

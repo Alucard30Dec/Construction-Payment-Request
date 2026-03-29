@@ -25,13 +25,12 @@ public class ApprovalMatrixService : IApprovalMatrixService
     {
         var query = _dbContext.ApprovalMatrices
             .AsNoTracking()
-            .Include(x => x.Project)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(request.Department))
         {
-            var department = request.Department.Trim().ToLower();
-            query = query.Where(x => x.Department != null && x.Department.ToLower() == department);
+            var department = request.Department.Trim();
+            query = query.Where(x => x.Department != null && EF.Functions.Like(x.Department, department));
         }
 
         if (request.ProjectId.HasValue)
@@ -44,9 +43,23 @@ public class ApprovalMatrixService : IApprovalMatrixService
             query = query.Where(x => x.IsActive == request.IsActive.Value);
         }
 
-        query = query.OrderBy(x => x.MinAmount);
+        query = query
+            .OrderBy(x => x.MinAmount)
+            .ThenBy(x => x.Id);
 
-        return await query.ToPagedResultAsync(request.PageNumber, request.PageSize, x => x.ToDto(), cancellationToken);
+        return await query.ToPagedResultProjectedAsync(request.PageNumber, request.PageSize, x => new ApprovalMatrixDto
+        {
+            Id = x.Id,
+            MinAmount = x.MinAmount,
+            MaxAmount = x.MaxAmount,
+            RequireDirectorApproval = x.RequireDirectorApproval,
+            Department = x.Department,
+            ProjectId = x.ProjectId,
+            ProjectName = x.Project != null ? x.Project.Name : null,
+            IsActive = x.IsActive,
+            CreatedAt = x.CreatedAt,
+            UpdatedAt = x.UpdatedAt
+        }, cancellationToken);
     }
 
     public async Task<ApprovalMatrixDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)

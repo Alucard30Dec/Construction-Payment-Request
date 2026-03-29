@@ -25,17 +25,15 @@ public class ContractService : IContractService
     {
         var query = _dbContext.Contracts
             .AsNoTracking()
-            .Include(x => x.Supplier)
-            .Include(x => x.Project)
-            .Include(x => x.Attachments)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
-            var keyword = request.Search.Trim().ToLower();
+            var keyword = request.Search.Trim();
+            var pattern = $"%{keyword}%";
             query = query.Where(x =>
-                x.ContractNumber.ToLower().Contains(keyword) ||
-                x.Name.ToLower().Contains(keyword));
+                EF.Functions.Like(x.ContractNumber, pattern) ||
+                EF.Functions.Like(x.Name, pattern));
         }
 
         if (request.SupplierId.HasValue)
@@ -53,9 +51,29 @@ public class ContractService : IContractService
             query = query.Where(x => x.IsActive == request.IsActive.Value);
         }
 
-        query = query.OrderByDescending(x => x.CreatedAt);
+        query = query
+            .OrderByDescending(x => x.CreatedAt)
+            .ThenByDescending(x => x.Id);
 
-        return await query.ToPagedResultAsync(request.PageNumber, request.PageSize, x => x.ToDto(), cancellationToken);
+        return await query.ToPagedResultProjectedAsync(request.PageNumber, request.PageSize, x => new ContractDto
+        {
+            Id = x.Id,
+            ContractNumber = x.ContractNumber,
+            Name = x.Name,
+            SupplierId = x.SupplierId,
+            SupplierName = x.Supplier != null ? x.Supplier.Name : string.Empty,
+            ProjectId = x.ProjectId,
+            ProjectName = x.Project != null ? x.Project.Name : string.Empty,
+            SignedDate = x.SignedDate,
+            ContractValue = x.ContractValue,
+            ContractType = x.ContractType,
+            Notes = x.Notes,
+            AttachmentPath = x.AttachmentPath,
+            AttachmentCount = x.Attachments.Count(),
+            IsActive = x.IsActive,
+            CreatedAt = x.CreatedAt,
+            UpdatedAt = x.UpdatedAt
+        }, cancellationToken);
     }
 
     public async Task<ContractDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)

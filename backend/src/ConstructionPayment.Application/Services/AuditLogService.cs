@@ -18,7 +18,6 @@ public class AuditLogService : IAuditLogService
     {
         var query = _dbContext.AuditLogs
             .AsNoTracking()
-            .Include(x => x.User)
             .AsQueryable();
 
         if (request.UserId.HasValue)
@@ -28,14 +27,14 @@ public class AuditLogService : IAuditLogService
 
         if (!string.IsNullOrWhiteSpace(request.Action))
         {
-            var action = request.Action.Trim().ToLower();
-            query = query.Where(x => x.Action.ToLower() == action);
+            var action = request.Action.Trim();
+            query = query.Where(x => EF.Functions.Like(x.Action, action));
         }
 
         if (!string.IsNullOrWhiteSpace(request.EntityName))
         {
-            var entityName = request.EntityName.Trim().ToLower();
-            query = query.Where(x => x.EntityName.ToLower() == entityName);
+            var entityName = request.EntityName.Trim();
+            query = query.Where(x => EF.Functions.Like(x.EntityName, entityName));
         }
 
         if (request.FromDate.HasValue)
@@ -45,13 +44,15 @@ public class AuditLogService : IAuditLogService
 
         if (request.ToDate.HasValue)
         {
-            var toDate = request.ToDate.Value.Date.AddDays(1).AddTicks(-1);
-            query = query.Where(x => x.CreatedAt <= toDate);
+            var nextDate = request.ToDate.Value.Date.AddDays(1);
+            query = query.Where(x => x.CreatedAt < nextDate);
         }
 
-        query = query.OrderByDescending(x => x.CreatedAt);
+        query = query
+            .OrderByDescending(x => x.CreatedAt)
+            .ThenByDescending(x => x.Id);
 
-        return await query.ToPagedResultAsync(request.PageNumber, request.PageSize, x => new AuditLogDto
+        return await query.ToPagedResultProjectedAsync(request.PageNumber, request.PageSize, x => new AuditLogDto
         {
             Id = x.Id,
             UserId = x.UserId,

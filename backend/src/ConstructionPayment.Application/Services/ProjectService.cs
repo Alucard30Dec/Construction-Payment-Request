@@ -27,8 +27,9 @@ public class ProjectService : IProjectService
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
-            var keyword = request.Search.Trim().ToLower();
-            query = query.Where(x => x.Code.ToLower().Contains(keyword) || x.Name.ToLower().Contains(keyword));
+            var keyword = request.Search.Trim();
+            var pattern = $"%{keyword}%";
+            query = query.Where(x => EF.Functions.Like(x.Code, pattern) || EF.Functions.Like(x.Name, pattern));
         }
 
         if (request.IsActive.HasValue)
@@ -36,9 +37,22 @@ public class ProjectService : IProjectService
             query = query.Where(x => x.IsActive == request.IsActive.Value);
         }
 
-        query = query.OrderByDescending(x => x.CreatedAt);
+        query = query
+            .OrderByDescending(x => x.CreatedAt)
+            .ThenByDescending(x => x.Id);
 
-        return await query.ToPagedResultAsync(request.PageNumber, request.PageSize, x => x.ToDto(), cancellationToken);
+        return await query.ToPagedResultProjectedAsync(request.PageNumber, request.PageSize, x => new ProjectDto
+        {
+            Id = x.Id,
+            Code = x.Code,
+            Name = x.Name,
+            Location = x.Location,
+            Department = x.Department,
+            ProjectManager = x.ProjectManager,
+            IsActive = x.IsActive,
+            CreatedAt = x.CreatedAt,
+            UpdatedAt = x.UpdatedAt
+        }, cancellationToken);
     }
 
     public async Task<ProjectDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)

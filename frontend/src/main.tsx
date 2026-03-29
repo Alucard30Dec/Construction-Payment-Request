@@ -12,8 +12,22 @@ import { AuthProvider } from './contexts/AuthContext';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      staleTime: 30_000,
+      gcTime: 10 * 60_000,
+      refetchOnMount: false,
       refetchOnWindowFocus: false,
+      retry: (failureCount, error: unknown) => {
+        const status = (error as { response?: { status?: number } })?.response?.status;
+        if (status === 400 || status === 401 || status === 403 || status === 404) {
+          return false;
+        }
+
+        return failureCount < 2;
+      },
+      retryDelay: (attemptIndex) => Math.min(500 * 2 ** attemptIndex, 3_000),
+    },
+    mutations: {
+      retry: 0,
     },
   },
 });

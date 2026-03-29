@@ -26,22 +26,18 @@ public class PaymentRequestService : IPaymentRequestService
     {
         var query = _dbContext.PaymentRequests
             .AsNoTracking()
-            .Include(x => x.Project)
-            .Include(x => x.Supplier)
-            .Include(x => x.Contract)
-            .Include(x => x.CreatedByUser)
-            .Include(x => x.Attachments)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
-            var keyword = request.Search.Trim().ToLower();
+            var keyword = request.Search.Trim();
+            var pattern = $"%{keyword}%";
             query = query.Where(x =>
-                x.RequestCode.ToLower().Contains(keyword) ||
-                x.Title.ToLower().Contains(keyword) ||
-                x.InvoiceNumber.ToLower().Contains(keyword) ||
-                x.Supplier != null && x.Supplier.Name.ToLower().Contains(keyword) ||
-                x.Project != null && x.Project.Name.ToLower().Contains(keyword));
+                EF.Functions.Like(x.RequestCode, pattern) ||
+                EF.Functions.Like(x.Title, pattern) ||
+                EF.Functions.Like(x.InvoiceNumber, pattern) ||
+                (x.Supplier != null && EF.Functions.Like(x.Supplier.Name, pattern)) ||
+                (x.Project != null && EF.Functions.Like(x.Project.Name, pattern)));
         }
 
         if (request.ProjectId.HasValue)
@@ -71,9 +67,36 @@ public class PaymentRequestService : IPaymentRequestService
             query = query.Where(x => x.CreatedAt <= toDate);
         }
 
-        query = query.OrderByDescending(x => x.CreatedAt);
+        query = query
+            .OrderByDescending(x => x.CreatedAt)
+            .ThenByDescending(x => x.Id);
 
-        return await query.ToPagedResultAsync(request.PageNumber, request.PageSize, x => x.ToListDto(), cancellationToken);
+        return await query.ToPagedResultProjectedAsync(request.PageNumber, request.PageSize, x => new PaymentRequestDto
+        {
+            Id = x.Id,
+            RequestCode = x.RequestCode,
+            Title = x.Title,
+            ProjectId = x.ProjectId,
+            ProjectName = x.Project != null ? x.Project.Name : string.Empty,
+            SupplierId = x.SupplierId,
+            SupplierName = x.Supplier != null ? x.Supplier.Name : string.Empty,
+            ContractId = x.ContractId,
+            ContractName = x.Contract != null ? x.Contract.Name : null,
+            RequestType = x.RequestType,
+            InvoiceNumber = x.InvoiceNumber,
+            InvoiceDate = x.InvoiceDate,
+            DueDate = x.DueDate,
+            RequestedAmount = x.RequestedAmount,
+            PaymentMethod = x.PaymentMethod,
+            CurrentStatus = x.CurrentStatus,
+            CreatedByUserId = x.CreatedByUserId,
+            CreatedByUsername = x.CreatedByUser != null ? x.CreatedByUser.Username : string.Empty,
+            SubmittedAt = x.SubmittedAt,
+            ApprovedAt = x.ApprovedAt,
+            PaidAt = x.PaidAt,
+            CreatedAt = x.CreatedAt,
+            AttachmentCount = x.Attachments.Count()
+        }, cancellationToken);
     }
 
     public async Task<PaymentRequestDetailDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -704,16 +727,29 @@ public class PaymentRequestService : IPaymentRequestService
                 .FirstOrDefaultAsync(cancellationToken);
         }
 
-        var department = projectDepartment?.Trim().ToLower();
+        var department = projectDepartment?.Trim();
 
-        var matrix = await _dbContext.ApprovalMatrices
+        var matrixQuery = _dbContext.ApprovalMatrices
             .AsNoTracking()
             .Where(x =>
                 x.IsActive &&
                 paymentRequest.RequestedAmount >= x.MinAmount &&
                 paymentRequest.RequestedAmount <= x.MaxAmount &&
-                (!x.ProjectId.HasValue || x.ProjectId == paymentRequest.ProjectId) &&
-                (string.IsNullOrWhiteSpace(x.Department) || x.Department!.ToLower() == department))
+                (!x.ProjectId.HasValue || x.ProjectId == paymentRequest.ProjectId))
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(department))
+        {
+            matrixQuery = matrixQuery.Where(x =>
+                string.IsNullOrWhiteSpace(x.Department) ||
+                EF.Functions.Like(x.Department!, department));
+        }
+        else
+        {
+            matrixQuery = matrixQuery.Where(x => string.IsNullOrWhiteSpace(x.Department));
+        }
+
+        var matrix = await matrixQuery
             .OrderByDescending(x => x.ProjectId.HasValue)
             .ThenByDescending(x => !string.IsNullOrWhiteSpace(x.Department))
             .ThenByDescending(x => x.MinAmount)
