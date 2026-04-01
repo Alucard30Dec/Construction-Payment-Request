@@ -100,7 +100,7 @@ Remove-Item Env:DatabaseProvider -ErrorAction SilentlyContinue
 
 $env:ASPNETCORE_ENVIRONMENT = "Development"
 $env:DatabaseProvider = "MySql"
-$env:Database__SeedDemoData = "true"
+$env:Database__SeedDemoData = "false"
 $env:Database__AllowSqliteFallbackInDevelopment = "false"
 $env:ConnectionStrings__MySqlConnection = $resolvedConnectionString
 $env:ASPNETCORE_URLS = "http://localhost:5000"

@@ -265,8 +265,7 @@ using (var scope = app.Services.CreateScope())
     var isSqlServer = providerName.Contains("SqlServer", StringComparison.OrdinalIgnoreCase);
     var isMySql = providerName.Contains("MySql", StringComparison.OrdinalIgnoreCase);
     var shouldAutoMigrate = app.Environment.IsDevelopment() || isSqlite || isSqlServer || isMySql;
-    var enableDemoSeed = builder.Configuration.GetValue<bool?>("Database:SeedDemoData")
-        ?? (app.Environment.IsDevelopment() || isSqlite || isMySql);
+    var enableDemoSeed = builder.Configuration.GetValue<bool?>("Database:SeedDemoData") ?? false;
 
     logger.LogInformation("Database provider hiện tại: {ProviderName}", providerName);
 
@@ -315,7 +314,7 @@ using (var scope = app.Services.CreateScope())
 
     var hasAnyUser = await dbContext.Users.AsNoTracking().AnyAsync();
     var hasAnyRoleProfile = await dbContext.RoleProfiles.AsNoTracking().AnyAsync();
-    var shouldSeedDemoData = enableDemoSeed && (bootstrapDatabaseOnly || !hasAnyUser || !hasAnyRoleProfile);
+    var shouldSeedDemoData = bootstrapDatabaseOnly || (enableDemoSeed && (!hasAnyUser || !hasAnyRoleProfile));
 
     if (!shouldSeedDemoData)
     {

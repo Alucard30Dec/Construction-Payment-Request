@@ -16,7 +16,7 @@ services:
       - key: Database__AllowSqliteFallbackInDevelopment
         value: "false"
       - key: Database__SeedDemoData
-        value: "true"
+        value: "false"
       - key: ConnectionStrings__MySqlConnection
         sync: false
       - key: DATABASE_URL

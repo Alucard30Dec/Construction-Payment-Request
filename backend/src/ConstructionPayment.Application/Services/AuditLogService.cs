@@ -56,7 +56,7 @@ public class AuditLogService : IAuditLogService
         {
             Id = x.Id,
             UserId = x.UserId,
-            Username = x.User?.Username,
+            Username = x.User != null ? x.User.Username : null,
             Action = x.Action,
             EntityName = x.EntityName,
             EntityId = x.EntityId,

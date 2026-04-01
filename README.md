@@ -105,12 +105,12 @@ npm run dev
 ## 6. Database, Migration, Seed
 Mặc định môi trường Development lấy cấu hình từ `appsettings.Development.json` (SQLite local hoặc MySQL/TiDB tùy bạn đặt `DatabaseProvider`).
 
-### 6.1 Tự động migrate + seed khi chạy Development
+### 6.1 Tự động migrate khi chạy Development
 Khi backend khởi động ở môi trường `Development`, app sẽ:
 1. Tự apply migration theo Code First cho SQLite / SQL Server / MySQL(TiDB)
 2. Nếu migrate MySQL/TiDB lỗi trong Development, app sẽ thử fallback `EnsureCreated()`
 3. Kiểm tra kết nối DB và kiểm tra truy cập bảng `Users` trước khi nhận request
-4. Tự seed dữ liệu mẫu
+4. Chỉ seed dữ liệu mẫu khi bạn chủ động bật `Database:SeedDemoData=true` hoặc chạy `--bootstrap-db`
 5. Nếu seed lỗi do DB SQLite dev cũ/sai schema, app sẽ thử reset DB dev và seed lại 1 lần
 6. Nếu cấu hình `MySql` nhưng máy thiếu provider/runtime MySQL, app sẽ tự fallback sang SQLite (Development) để vẫn đăng nhập/test được
 
@@ -162,8 +162,9 @@ cd backend
 ### 6.5 Chạy Development với TiDB (1 lệnh, chống lỗi env ghi đè)
 Script này sẽ:
 1. Ép đúng `ConnectionStrings__MySqlConnection`
-2. Chạy bootstrap `Migrate + Seed`
-3. Chạy `dotnet watch`
+2. Chỉ `Migrate` khi chạy web bình thường
+3. Chỉ seed khi bạn truyền `-BootstrapDb` hoặc `--bootstrap-db`
+4. Chạy `dotnet watch`
 
 PowerShell (Windows):
 ```powershell
@@ -229,7 +230,7 @@ Bạn có thể dùng trực tiếp URL dạng `mysql://...` như sau:
 {
   "DatabaseProvider": "MySql",
   "Database": {
-    "SeedDemoData": true
+    "SeedDemoData": false
   },
   "ConnectionStrings": {
     "MySqlConnection": "mysql://2MGq6vKV1Xvchpy.root:<PASSWORD>@gateway01.ap-southeast-1.prod.aws.tidbcloud.com:4000/test"
@@ -238,7 +239,8 @@ Bạn có thể dùng trực tiếp URL dạng `mysql://...` như sau:
 ```
 
 Lưu ý:
-- Với MySQL/TiDB, app ưu tiên `Migrate()` theo Code First, sau đó seed dữ liệu mẫu.
+- Với MySQL/TiDB, app ưu tiên `Migrate()` theo Code First.
+- Seed dữ liệu mẫu chỉ chạy khi `Database:SeedDemoData=true` hoặc khi bạn bootstrap bằng `--bootstrap-db`.
 - Chỉ khi `Migrate()` lỗi trong môi trường Development, app mới fallback `EnsureCreated()` để hỗ trợ local test nhanh.
 - Không nên hard-code mật khẩu trong source. Nên dùng env var:
   - `ConnectionStrings__MySqlConnection`
@@ -295,7 +297,8 @@ $env:ConnectionStrings__MySqlConnection="mysql://2MGq6vKV1Xvchpy.root:<PASSWORD>
 - Dùng TiDB/MySQL nhưng chưa có bảng:
   - Đặt `DatabaseProvider = "MySql"`.
   - Kiểm tra `ConnectionStrings:MySqlConnection` đúng host/user/password/db.
-  - Khởi động lại backend để app tự `Migrate + SeedDemoData`.
+  - Khởi động lại backend để app tự `Migrate()`.
+  - Nếu cần dữ liệu mẫu, chạy bootstrap riêng với `./scripts/bootstrap-tidb.ps1` hoặc `./scripts/bootstrap-tidb.sh`.
   - Gọi `http://localhost:5000/health/db` để xác nhận `status = ok`.
 - Lỗi `Option 'connectionstrings__mysqlconnection' not supported` khi deploy:
   - Bạn đang nhập sai **Value** của biến môi trường.

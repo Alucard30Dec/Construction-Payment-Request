@@ -51,7 +51,7 @@ unset DatabaseProvider || true
 
 export ASPNETCORE_ENVIRONMENT=Development
 export DatabaseProvider=MySql
-export Database__SeedDemoData=true
+export Database__SeedDemoData=false
 export Database__AllowSqliteFallbackInDevelopment=false
 export ConnectionStrings__MySqlConnection="$MYSQL_CONNECTION_STRING"
 export ASPNETCORE_URLS=http://localhost:5000

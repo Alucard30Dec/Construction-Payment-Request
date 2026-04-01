@@ -795,7 +795,7 @@ public class PaymentRequestService : IPaymentRequestService
             .Include(x => x.Contract)
             .Include(x => x.CreatedByUser)
             .Include(x => x.Attachments)
-            .Include(x => x.PaymentConfirmation)
+            .Include(x => x.PaymentConfirmation!)
             .ThenInclude(x => x.Attachments)
             .Include(x => x.ApprovalHistories)
             .ThenInclude(x => x.ApproverUser)
