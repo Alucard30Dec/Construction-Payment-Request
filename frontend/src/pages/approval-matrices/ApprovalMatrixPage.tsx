@@ -1,24 +1,8 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  Button,
-  Card,
-  Form,
-  Input,
-  InputNumber,
-  Modal,
-  Select,
-  Space,
-  Switch,
-  Table,
-  Typography,
-  message,
-} from 'antd';
+import { Button, Card, Form, Input, InputNumber, Modal, Select, Space, Switch, Table, Typography, message } from 'antd';
 import { useMemo, useState } from 'react';
-import {
-  approvalMatrixService,
-  type ApprovalMatrixPayload,
-} from '../../services/approvalMatrixService';
+import { approvalMatrixService, type ApprovalMatrixPayload } from '../../services/approvalMatrixService';
 import type { ApprovalMatrix } from '../../types';
 import { useProjectLookup } from '../../hooks/useLookups';
 import { getErrorMessage } from '../../utils/apiError';
@@ -134,29 +118,30 @@ export function ApprovalMatrixPage() {
           `${formatCurrency(record.minAmount)} - ${formatCurrency(record.maxAmount)}`,
       },
       { title: 'Phòng ban', dataIndex: 'department', key: 'department' },
-      { title: 'Dự án', dataIndex: 'projectName', key: 'projectName' },
+      { title: 'Dự án', dataIndex: 'projectName', key: 'projectName', responsive: ['lg'] as Array<'lg'> },
       {
         title: 'Yêu cầu duyệt GĐ',
         key: 'requireDirectorApproval',
-        render: (_: unknown, record: ApprovalMatrix) =>
-          record.requireDirectorApproval ? 'Có' : 'Không',
+        responsive: ['md'] as Array<'md'>,
+        render: (_: unknown, record: ApprovalMatrix) => (record.requireDirectorApproval ? 'Có' : 'Không'),
       },
       {
         title: 'Trạng thái',
         key: 'isActive',
-        render: (_: unknown, record: ApprovalMatrix) =>
-          record.isActive ? 'Hoạt động' : 'Ngưng hoạt động',
+        responsive: ['md'] as Array<'md'>,
+        render: (_: unknown, record: ApprovalMatrix) => (record.isActive ? 'Hoạt động' : 'Ngưng hoạt động'),
       },
       {
         title: 'Cập nhật',
         key: 'updatedAt',
+        responsive: ['xl'] as Array<'xl'>,
         render: (_: unknown, record: ApprovalMatrix) => formatDateTime(record.updatedAt),
       },
       {
         title: 'Thao tác',
         key: 'actions',
         render: (_: unknown, record: ApprovalMatrix) => (
-          <Space>
+          <Space wrap className="table-actions">
             <Button icon={<EditOutlined />} onClick={() => openEditModal(record)}>
               Sửa
             </Button>
@@ -181,17 +166,24 @@ export function ApprovalMatrixPage() {
   );
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
+    <div className="page-stack">
       <div className="page-header">
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          Cấu hình ma trận duyệt
-        </Typography.Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
-          Thêm cấu hình
-        </Button>
+        <div className="page-header__content">
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            Cấu hình ma trận duyệt
+          </Typography.Title>
+          <Typography.Text className="page-subtitle">
+            Bộ lọc, bảng và modal cấu hình được thu gọn để tránh chật ngang khi dùng trên điện thoại.
+          </Typography.Text>
+        </div>
+        <div className="page-header__actions">
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
+            Thêm cấu hình
+          </Button>
+        </div>
       </div>
 
-      <Card>
+      <Card className="page-card">
         <div className="filter-grid" style={{ marginBottom: 16 }}>
           <Input
             allowClear
@@ -239,10 +231,12 @@ export function ApprovalMatrixPage() {
         </div>
 
         <Table<ApprovalMatrix>
+          className="responsive-table"
           rowKey="id"
           loading={query.isLoading}
           columns={columns}
           dataSource={query.data?.items ?? []}
+          scroll={{ x: 960 }}
           pagination={{
             current: filters.pageNumber,
             pageSize: filters.pageSize,
@@ -312,11 +306,7 @@ export function ApprovalMatrixPage() {
               ({ getFieldValue }) => ({
                 validator(_, value: number | undefined) {
                   const minAmount = getFieldValue('minAmount') as number | undefined;
-                  if (
-                    typeof value !== 'number' ||
-                    typeof minAmount !== 'number' ||
-                    value > minAmount
-                  ) {
+                  if (typeof value !== 'number' || typeof minAmount !== 'number' || value > minAmount) {
                     return Promise.resolve();
                   }
                   return Promise.reject(new Error('Giá trị tối đa phải lớn hơn giá trị tối thiểu.'));
@@ -332,17 +322,10 @@ export function ApprovalMatrixPage() {
           </Form.Item>
 
           <Form.Item label="Dự án (tùy chọn)" name="projectId">
-            <Select
-              allowClear
-              options={(projectLookup.data ?? []).map((x) => ({ label: x.name, value: x.id }))}
-            />
+            <Select allowClear options={(projectLookup.data ?? []).map((x) => ({ label: x.name, value: x.id }))} />
           </Form.Item>
 
-          <Form.Item
-            label="Yêu cầu giám đốc duyệt"
-            name="requireDirectorApproval"
-            valuePropName="checked"
-          >
+          <Form.Item label="Yêu cầu giám đốc duyệt" name="requireDirectorApproval" valuePropName="checked">
             <Switch />
           </Form.Item>
 

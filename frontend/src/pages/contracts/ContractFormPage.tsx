@@ -349,21 +349,21 @@ export function ContractFormPage() {
   );
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
+    <div className="page-stack">
       <div className="page-header">
         <Typography.Title level={3} style={{ margin: 0 }}>
           {id ? 'Sửa hợp đồng' : 'Thêm hợp đồng'}
         </Typography.Title>
       </div>
 
-      <Card loading={detailQuery.isLoading}>
+      <Card className="page-card" loading={detailQuery.isLoading}>
         <Form<ContractFormValues>
           form={form}
           layout="vertical"
           initialValues={{ isActive: true, contractType: 'Construction' }}
           onFinish={(values) => saveMutation.mutate(values)}
         >
-          <div className="filter-grid">
+          <div className="form-grid form-grid--wide">
             <Form.Item label="Số hợp đồng" name="contractNumber" rules={[{ required: true }]}>
               <Input />
             </Form.Item>

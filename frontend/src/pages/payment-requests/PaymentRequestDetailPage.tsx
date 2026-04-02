@@ -60,31 +60,38 @@ export function PaymentRequestDetailPage() {
   };
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
+    <div className="page-stack">
       <div className="page-header">
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          Chi tiết hồ sơ thanh toán
-        </Typography.Title>
-        <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/payment-requests')}>
-            Quay lại
-          </Button>
-          {item && ['Draft', 'ReturnedForEdit', 'Rejected'].includes(item.currentStatus) && (
-            <Button
-              type="primary"
-              icon={<EditOutlined />}
-              onClick={() => navigate(`/payment-requests/${item.id}/edit`)}
-            >
-              Sửa hồ sơ
+        <div className="page-header__content">
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            Chi tiết hồ sơ thanh toán
+          </Typography.Title>
+          <Typography.Text className="page-subtitle">
+            Thông tin chi tiết được tách khối rõ ràng, ưu tiên khả năng đọc và không cuộn ngang trên mobile.
+          </Typography.Text>
+        </div>
+        <div className="page-header__actions">
+          <Space wrap>
+            <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/payment-requests')}>
+              Quay lại
             </Button>
-          )}
-        </Space>
+            {item && ['Draft', 'ReturnedForEdit', 'Rejected'].includes(item.currentStatus) && (
+              <Button
+                type="primary"
+                icon={<EditOutlined />}
+                onClick={() => navigate(`/payment-requests/${item.id}/edit`)}
+              >
+                Sửa hồ sơ
+              </Button>
+            )}
+          </Space>
+        </div>
       </div>
 
-      <Card loading={query.isLoading}>
+      <Card className="page-card descriptions-responsive" loading={query.isLoading}>
         {item && (
           <>
-            <Descriptions title="Thông tin chung" bordered column={2} size="small">
+            <Descriptions title="Thông tin chung" bordered column={{ xs: 1, sm: 1, md: 2 }} size="small">
               <Descriptions.Item label="Mã hồ sơ">{item.requestCode}</Descriptions.Item>
               <Descriptions.Item label="Trạng thái">
                 <StatusBadge status={item.currentStatus} />
@@ -103,13 +110,25 @@ export function PaymentRequestDetailPage() {
               </Descriptions.Item>
             </Descriptions>
 
-            <Descriptions title="Thông tin hóa đơn" bordered column={3} size="small" style={{ marginTop: 16 }}>
+            <Descriptions
+              title="Thông tin hóa đơn"
+              bordered
+              column={{ xs: 1, sm: 1, md: 3 }}
+              size="small"
+              style={{ marginTop: 16 }}
+            >
               <Descriptions.Item label="Số hóa đơn">{item.invoiceNumber}</Descriptions.Item>
               <Descriptions.Item label="Ngày hóa đơn">{formatDate(item.invoiceDate)}</Descriptions.Item>
               <Descriptions.Item label="Hạn thanh toán">{formatDate(item.dueDate)}</Descriptions.Item>
             </Descriptions>
 
-            <Descriptions title="Giá trị thanh toán" bordered column={3} size="small" style={{ marginTop: 16 }}>
+            <Descriptions
+              title="Giá trị thanh toán"
+              bordered
+              column={{ xs: 1, sm: 1, md: 3 }}
+              size="small"
+              style={{ marginTop: 16 }}
+            >
               <Descriptions.Item label="Trước VAT">{formatCurrency(item.amountBeforeVat)}</Descriptions.Item>
               <Descriptions.Item label="VAT (%)">{item.vatRate}</Descriptions.Item>
               <Descriptions.Item label="Tiền VAT">{formatCurrency(item.vatAmount)}</Descriptions.Item>
@@ -125,7 +144,7 @@ export function PaymentRequestDetailPage() {
         )}
       </Card>
 
-      <Card title="Bản xem trước hồ sơ đính kèm" loading={query.isLoading}>
+      <Card className="page-card" title="Bản xem trước hồ sơ đính kèm" loading={query.isLoading}>
         <AttachmentPreviewGallery
           attachments={item?.attachments ?? []}
           emptyText="Chưa có file hồ sơ thanh toán để xem trước."
@@ -133,24 +152,27 @@ export function PaymentRequestDetailPage() {
         />
       </Card>
 
-      <Card title="File đính kèm" loading={query.isLoading}>
+      <Card className="page-card" title="File đính kèm" loading={query.isLoading}>
         <Table<Attachment>
+          className="responsive-table"
           size="small"
           rowKey="id"
           dataSource={item?.attachments ?? []}
           pagination={false}
+          scroll={{ x: 620 }}
           columns={[
             { title: 'Tên tệp', dataIndex: 'fileName', key: 'fileName' },
             {
               title: 'Dung lượng',
               key: 'fileSize',
+              responsive: ['sm'],
               render: (_: unknown, record: Attachment) => formatAttachmentFileSize(record.fileSize),
             },
             {
               title: 'Thao tác',
               key: 'actions',
               render: (_: unknown, record: Attachment) => (
-                <Space>
+                <Space wrap className="table-actions">
                   <Button icon={<EyeOutlined />} onClick={() => void openAttachmentPreview(record)} />
                   <Button icon={<DownloadOutlined />} onClick={() => void downloadAttachment(record)} />
                 </Space>
@@ -160,26 +182,28 @@ export function PaymentRequestDetailPage() {
         />
       </Card>
 
-      <Card title="Lịch sử duyệt" loading={query.isLoading}>
+      <Card className="page-card" title="Lịch sử duyệt" loading={query.isLoading}>
         <Table<PaymentRequestApprovalHistory>
+          className="responsive-table"
           size="small"
           rowKey="id"
           dataSource={item?.approvalHistories ?? []}
           pagination={false}
+          scroll={{ x: 860 }}
           columns={[
-            { title: 'Bước', dataIndex: 'stepOrder', key: 'stepOrder' },
+            { title: 'Bước', dataIndex: 'stepOrder', key: 'stepOrder', responsive: ['sm'] },
             {
               title: 'Người xử lý',
               key: 'approver',
               render: (_: unknown, record: PaymentRequestApprovalHistory) =>
                 `${record.approverFullName} (${record.approverUsername})`,
             },
-            { title: 'Hành động', dataIndex: 'action', key: 'action' },
+            { title: 'Hành động', dataIndex: 'action', key: 'action', responsive: ['md'] },
             {
               title: 'Thời gian',
               key: 'actionAt',
-              render: (_: unknown, record: PaymentRequestApprovalHistory) =>
-                formatDateTime(record.actionAt),
+              responsive: ['lg'],
+              render: (_: unknown, record: PaymentRequestApprovalHistory) => formatDateTime(record.actionAt),
             },
             { title: 'Ghi chú', dataIndex: 'comment', key: 'comment' },
           ]}
@@ -187,8 +211,8 @@ export function PaymentRequestDetailPage() {
       </Card>
 
       {item?.paymentConfirmation && (
-        <Card title="Thông tin thanh toán kế toán">
-          <Descriptions bordered size="small" column={2}>
+        <Card className="page-card" title="Thông tin thanh toán kế toán">
+          <Descriptions bordered size="small" column={{ xs: 1, sm: 1, md: 2 }}>
             <Descriptions.Item label="Ngày thanh toán">
               {formatDate(item.paymentConfirmation.paymentDate)}
             </Descriptions.Item>
@@ -221,24 +245,27 @@ export function PaymentRequestDetailPage() {
           </div>
 
           <Table<Attachment>
+            className="responsive-table"
             style={{ marginTop: 16 }}
             size="small"
             rowKey="id"
             dataSource={item.paymentConfirmation.attachments ?? []}
             pagination={false}
+            scroll={{ x: 620 }}
             locale={{ emptyText: 'Chưa có tệp hóa đơn/chứng từ kế toán' }}
             columns={[
               { title: 'File hóa đơn/chứng từ', dataIndex: 'fileName', key: 'fileName' },
               {
                 title: 'Dung lượng',
                 key: 'fileSize',
+                responsive: ['sm'],
                 render: (_: unknown, record: Attachment) => formatAttachmentFileSize(record.fileSize),
               },
               {
                 title: 'Thao tác',
                 key: 'actions',
                 render: (_: unknown, record: Attachment) => (
-                  <Space>
+                  <Space wrap className="table-actions">
                     <Button icon={<EyeOutlined />} onClick={() => void openAttachmentPreview(record)} />
                     <Button icon={<DownloadOutlined />} onClick={() => void downloadAttachment(record)} />
                   </Space>

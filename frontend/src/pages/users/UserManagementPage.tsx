@@ -1,18 +1,6 @@
 import { EditOutlined, KeyOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  Button,
-  Card,
-  Form,
-  Input,
-  Modal,
-  Select,
-  Space,
-  Switch,
-  Table,
-  Typography,
-  message,
-} from 'antd';
+import { Button, Card, Form, Input, Modal, Select, Space, Switch, Table, Typography, message } from 'antd';
 import { useMemo, useState } from 'react';
 import { userService, type CreateUserPayload, type UpdateUserPayload } from '../../services/userService';
 import type { User, UserRole } from '../../types';
@@ -155,25 +143,27 @@ export function UserManagementPage() {
     () => [
       { title: 'Tên đăng nhập', dataIndex: 'username', key: 'username' },
       { title: 'Họ tên', dataIndex: 'fullName', key: 'fullName' },
-      { title: 'Email', dataIndex: 'email', key: 'email' },
-      { title: 'Vai trò', dataIndex: 'role', key: 'role' },
-      { title: 'Role profile', dataIndex: 'roleProfileName', key: 'roleProfileName' },
-      { title: 'Phòng ban', dataIndex: 'department', key: 'department' },
+      { title: 'Email', dataIndex: 'email', key: 'email', responsive: ['lg'] as Array<'lg'> },
+      { title: 'Vai trò', dataIndex: 'role', key: 'role', responsive: ['md'] as Array<'md'> },
+      { title: 'Role profile', dataIndex: 'roleProfileName', key: 'roleProfileName', responsive: ['xl'] as Array<'xl'> },
+      { title: 'Phòng ban', dataIndex: 'department', key: 'department', responsive: ['lg'] as Array<'lg'> },
       {
         title: 'Trạng thái',
         key: 'isActive',
+        responsive: ['md'] as Array<'md'>,
         render: (_: unknown, record: User) => (record.isActive ? 'Hoạt động' : 'Ngưng hoạt động'),
       },
       {
         title: 'Tạo lúc',
         key: 'createdAt',
+        responsive: ['xl'] as Array<'xl'>,
         render: (_: unknown, record: User) => formatDateTime(record.createdAt),
       },
       {
         title: 'Thao tác',
         key: 'actions',
         render: (_: unknown, record: User) => (
-          <Space>
+          <Space wrap className="table-actions">
             <Button icon={<EditOutlined />} onClick={() => openEditModal(record)}>
               Sửa
             </Button>
@@ -188,17 +178,24 @@ export function UserManagementPage() {
   );
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
+    <div className="page-stack">
       <div className="page-header">
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          Quản trị người dùng và phân quyền
-        </Typography.Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
-          Tạo người dùng
-        </Button>
+        <div className="page-header__content">
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            Quản trị người dùng và phân quyền
+          </Typography.Title>
+          <Typography.Text className="page-subtitle">
+            Tối ưu bảng quản trị và các modal nhập liệu để thao tác nhanh hơn trên màn hình hẹp.
+          </Typography.Text>
+        </div>
+        <div className="page-header__actions">
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
+            Tạo người dùng
+          </Button>
+        </div>
       </div>
 
-      <Card>
+      <Card className="page-card">
         <div className="filter-grid" style={{ marginBottom: 16 }}>
           <Input.Search
             allowClear
@@ -245,10 +242,12 @@ export function UserManagementPage() {
         </div>
 
         <Table<User>
+          className="responsive-table"
           rowKey="id"
           loading={userQuery.isLoading}
           columns={columns}
           dataSource={userQuery.data?.items ?? []}
+          scroll={{ x: 1180 }}
           pagination={{
             current: filters.pageNumber,
             pageSize: filters.pageSize,
@@ -332,23 +331,15 @@ export function UserManagementPage() {
             </>
           )}
 
-          <Form.Item
-            label="Họ và tên"
-            name="fullName"
-            rules={[{ required: true, message: 'Vui lòng nhập họ tên.' }]}
-          >
+          <Form.Item label="Họ và tên" name="fullName" rules={[{ required: true, message: 'Vui lòng nhập họ tên.' }]}>
             <Input />
           </Form.Item>
 
-          <Form.Item label="Email" name="email" rules={[{ type: 'email', message: 'Email không hợp lệ.' }]}> 
+          <Form.Item label="Email" name="email" rules={[{ type: 'email', message: 'Email không hợp lệ.' }]}>
             <Input />
           </Form.Item>
 
-          <Form.Item
-            label="Vai trò"
-            name="role"
-            rules={[{ required: true, message: 'Vui lòng chọn vai trò.' }]}
-          >
+          <Form.Item label="Vai trò" name="role" rules={[{ required: true, message: 'Vui lòng chọn vai trò.' }]}>
             <Select options={roleOptions} />
           </Form.Item>
 

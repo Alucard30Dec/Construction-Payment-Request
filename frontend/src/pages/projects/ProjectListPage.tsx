@@ -38,21 +38,27 @@ export function ProjectListPage() {
 
   const columns = useMemo(
     () => [
-      { title: 'Mã', dataIndex: 'code', key: 'code' },
+      { title: 'Mã', dataIndex: 'code', key: 'code', responsive: ['sm'] as Array<'sm'> },
       { title: 'Tên dự án', dataIndex: 'name', key: 'name' },
-      { title: 'Địa điểm', dataIndex: 'location', key: 'location' },
-      { title: 'Phòng ban', dataIndex: 'department', key: 'department' },
-      { title: 'Quản lý dự án', dataIndex: 'projectManager', key: 'projectManager' },
+      { title: 'Địa điểm', dataIndex: 'location', key: 'location', responsive: ['lg'] as Array<'lg'> },
+      { title: 'Phòng ban', dataIndex: 'department', key: 'department', responsive: ['md'] as Array<'md'> },
+      {
+        title: 'Quản lý dự án',
+        dataIndex: 'projectManager',
+        key: 'projectManager',
+        responsive: ['xl'] as Array<'xl'>,
+      },
       {
         title: 'Trạng thái',
         key: 'isActive',
+        responsive: ['md'] as Array<'md'>,
         render: (_: unknown, record: Project) => (record.isActive ? 'Hoạt động' : 'Ngưng hoạt động'),
       },
       {
         title: 'Thao tác',
         key: 'actions',
         render: (_: unknown, record: Project) => (
-          <Space>
+          <Space wrap className="table-actions">
             <Button icon={<EditOutlined />} onClick={() => navigate(`/projects/${record.id}/edit`)} />
             <Button
               danger
@@ -73,17 +79,24 @@ export function ProjectListPage() {
   );
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
+    <div className="page-stack">
       <div className="page-header">
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          Dự án
-        </Typography.Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/projects/new')}>
-          Thêm mới
-        </Button>
+        <div className="page-header__content">
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            Dự án
+          </Typography.Title>
+          <Typography.Text className="page-subtitle">
+            Giữ lại đầy đủ dữ liệu, chỉ tối ưu bố cục và bảng hiển thị cho các màn hình nhỏ.
+          </Typography.Text>
+        </div>
+        <div className="page-header__actions">
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/projects/new')}>
+            Thêm mới
+          </Button>
+        </div>
       </div>
 
-      <Card>
+      <Card className="page-card">
         <div className="filter-grid" style={{ marginBottom: 16 }}>
           <Input.Search
             allowClear
@@ -109,10 +122,12 @@ export function ProjectListPage() {
         </div>
 
         <Table<Project>
+          className="responsive-table"
           rowKey="id"
           loading={query.isLoading}
           columns={columns}
           dataSource={query.data?.items ?? []}
+          scroll={{ x: 820 }}
           pagination={{
             current: pageNumber,
             pageSize,

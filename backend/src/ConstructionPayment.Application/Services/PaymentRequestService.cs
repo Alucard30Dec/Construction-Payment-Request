@@ -652,9 +652,14 @@ public class PaymentRequestService : IPaymentRequestService
             .FirstOrDefaultAsync(x => x.Id == contractId.Value, cancellationToken)
             ?? throw new AppException("Hợp đồng không tồn tại.");
 
-        if (contract.ProjectId != projectId || contract.SupplierId != supplierId)
+        if (contract.ProjectId != projectId)
         {
-            throw new AppException("Hợp đồng không thuộc dự án hoặc nhà cung cấp đã chọn.");
+            throw new AppException("Hợp đồng đã chọn không thuộc dự án hiện tại.");
+        }
+
+        if (contract.SupplierId != supplierId)
+        {
+            throw new AppException("Hợp đồng đã chọn không thuộc nhà cung cấp hiện tại.");
         }
     }
 

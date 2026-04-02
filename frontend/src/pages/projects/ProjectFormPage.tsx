@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Button, Card, Form, Input, Space, Switch, Typography, message } from 'antd';
+import { Button, Card, Form, Input, Switch, Typography, message } from 'antd';
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { projectService, type ProjectPayload } from '../../services/projectService';
@@ -41,48 +41,58 @@ export function ProjectFormPage() {
   });
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
+    <div className="page-stack">
       <div className="page-header">
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          {id ? 'Sửa dự án' : 'Thêm dự án'}
-        </Typography.Title>
+        <div className="page-header__content">
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            {id ? 'Sửa dự án' : 'Thêm dự án'}
+          </Typography.Title>
+          <Typography.Text className="page-subtitle">
+            Form dự án vẫn giữ nguyên dữ liệu đầu vào, chỉ được tối ưu lại spacing và luồng thao tác.
+          </Typography.Text>
+        </div>
       </div>
 
-      <Card loading={detailQuery.isLoading}>
+      <Card className="page-card" loading={detailQuery.isLoading}>
         <Form<ProjectPayload>
           form={form}
           layout="vertical"
           initialValues={{ isActive: true }}
           onFinish={(values) => saveMutation.mutate(values)}
         >
-          <div className="filter-grid">
-            <Form.Item label="Mã dự án" name="code" rules={[{ required: true }]}>
-              <Input />
-            </Form.Item>
-            <Form.Item label="Tên dự án" name="name" rules={[{ required: true }]}>
-              <Input />
-            </Form.Item>
-            <Form.Item label="Địa điểm" name="location">
-              <Input />
-            </Form.Item>
-            <Form.Item label="Phòng ban" name="department">
-              <Input />
-            </Form.Item>
-            <Form.Item label="Quản lý dự án" name="projectManager">
-              <Input />
-            </Form.Item>
+          <div className="form-section">
+            <Typography.Title className="form-section__title" level={5}>
+              Thông tin dự án
+            </Typography.Title>
+            <div className="form-grid">
+              <Form.Item label="Mã dự án" name="code" rules={[{ required: true }]}>
+                <Input />
+              </Form.Item>
+              <Form.Item label="Tên dự án" name="name" rules={[{ required: true }]}>
+                <Input />
+              </Form.Item>
+              <Form.Item label="Địa điểm" name="location">
+                <Input />
+              </Form.Item>
+              <Form.Item label="Phòng ban" name="department">
+                <Input />
+              </Form.Item>
+              <Form.Item label="Quản lý dự án" name="projectManager">
+                <Input />
+              </Form.Item>
+            </div>
           </div>
 
           <Form.Item label="Kích hoạt" name="isActive" valuePropName="checked">
             <Switch />
           </Form.Item>
 
-          <Space>
+          <div className="form-actions sticky-mobile-actions">
             <Button onClick={() => navigate('/projects')}>Hủy</Button>
             <Button type="primary" htmlType="submit" loading={saveMutation.isPending}>
               Lưu
             </Button>
-          </Space>
+          </div>
         </Form>
       </Card>
     </div>

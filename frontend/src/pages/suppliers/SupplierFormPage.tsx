@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Button, Card, Form, Input, Space, Switch, Typography, message } from 'antd';
+import { Button, Card, Form, Input, Switch, Typography, message } from 'antd';
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supplierService, type SupplierPayload } from '../../services/supplierService';
@@ -41,48 +41,58 @@ export function SupplierFormPage() {
   });
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
+    <div className="page-stack">
       <div className="page-header">
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          {id ? 'Sửa nhà cung cấp' : 'Thêm nhà cung cấp'}
-        </Typography.Title>
+        <div className="page-header__content">
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            {id ? 'Sửa nhà cung cấp' : 'Thêm nhà cung cấp'}
+          </Typography.Title>
+          <Typography.Text className="page-subtitle">
+            Biểu mẫu được gom theo nhóm rõ ràng, tự co về một cột trên điện thoại để thao tác dễ hơn.
+          </Typography.Text>
+        </div>
       </div>
 
-      <Card loading={detailQuery.isLoading}>
+      <Card className="page-card" loading={detailQuery.isLoading}>
         <Form<SupplierPayload>
           form={form}
           layout="vertical"
           initialValues={{ isActive: true }}
           onFinish={(values) => saveMutation.mutate(values)}
         >
-          <div className="filter-grid">
-            <Form.Item label="Mã nhà cung cấp" name="code" rules={[{ required: true }]}>
-              <Input />
-            </Form.Item>
-            <Form.Item label="Tên nhà cung cấp" name="name" rules={[{ required: true }]}>
-              <Input />
-            </Form.Item>
-            <Form.Item label="Mã số thuế" name="taxCode" rules={[{ required: true }]}>
-              <Input />
-            </Form.Item>
-            <Form.Item label="Người liên hệ" name="contactPerson">
-              <Input />
-            </Form.Item>
-            <Form.Item label="Điện thoại" name="phone">
-              <Input />
-            </Form.Item>
-            <Form.Item label="Email" name="email" rules={[{ type: 'email', message: 'Email không hợp lệ.' }]}>
-              <Input />
-            </Form.Item>
-            <Form.Item label="Tài khoản ngân hàng" name="bankAccountNumber">
-              <Input />
-            </Form.Item>
-            <Form.Item label="Ngân hàng" name="bankName">
-              <Input />
-            </Form.Item>
-            <Form.Item label="Chi nhánh" name="bankBranch">
-              <Input />
-            </Form.Item>
+          <div className="form-section">
+            <Typography.Title className="form-section__title" level={5}>
+              Thông tin nhà cung cấp
+            </Typography.Title>
+            <div className="form-grid form-grid--wide">
+              <Form.Item label="Mã nhà cung cấp" name="code" rules={[{ required: true }]}>
+                <Input />
+              </Form.Item>
+              <Form.Item label="Tên nhà cung cấp" name="name" rules={[{ required: true }]}>
+                <Input />
+              </Form.Item>
+              <Form.Item label="Mã số thuế" name="taxCode" rules={[{ required: true }]}>
+                <Input />
+              </Form.Item>
+              <Form.Item label="Người liên hệ" name="contactPerson">
+                <Input />
+              </Form.Item>
+              <Form.Item label="Điện thoại" name="phone">
+                <Input />
+              </Form.Item>
+              <Form.Item label="Email" name="email" rules={[{ type: 'email', message: 'Email không hợp lệ.' }]}>
+                <Input />
+              </Form.Item>
+              <Form.Item label="Tài khoản ngân hàng" name="bankAccountNumber">
+                <Input />
+              </Form.Item>
+              <Form.Item label="Ngân hàng" name="bankName">
+                <Input />
+              </Form.Item>
+              <Form.Item label="Chi nhánh" name="bankBranch">
+                <Input />
+              </Form.Item>
+            </div>
           </div>
 
           <Form.Item label="Địa chỉ" name="address">
@@ -97,12 +107,12 @@ export function SupplierFormPage() {
             <Switch />
           </Form.Item>
 
-          <Space>
+          <div className="form-actions sticky-mobile-actions">
             <Button onClick={() => navigate('/suppliers')}>Hủy</Button>
             <Button type="primary" htmlType="submit" loading={saveMutation.isPending}>
               Lưu
             </Button>
-          </Space>
+          </div>
         </Form>
       </Card>
     </div>

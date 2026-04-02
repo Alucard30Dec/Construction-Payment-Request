@@ -1,16 +1,6 @@
 import { EyeOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
-import {
-  Button,
-  Card,
-  DatePicker,
-  Input,
-  Modal,
-  Select,
-  Space,
-  Table,
-  Typography,
-} from 'antd';
+import { Button, Card, DatePicker, Input, Modal, Select, Space, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 import { auditLogService } from '../../services/auditLogService';
@@ -99,8 +89,8 @@ export function AuditLogPage() {
       },
       { title: 'Người thao tác', dataIndex: 'username', key: 'username', width: 140 },
       { title: 'Hành động', dataIndex: 'action', key: 'action', width: 160 },
-      { title: 'Entity', dataIndex: 'entityName', key: 'entityName', width: 180 },
-      { title: 'EntityId', dataIndex: 'entityId', key: 'entityId' },
+      { title: 'Entity', dataIndex: 'entityName', key: 'entityName', width: 180, responsive: ['md'] as Array<'md'> },
+      { title: 'EntityId', dataIndex: 'entityId', key: 'entityId', responsive: ['lg'] as Array<'lg'> },
       {
         title: 'Chi tiết',
         key: 'details',
@@ -115,14 +105,19 @@ export function AuditLogPage() {
   );
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
+    <div className="page-stack">
       <div className="page-header">
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          Lịch sử Audit Log
-        </Typography.Title>
+        <div className="page-header__content">
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            Lịch sử Audit Log
+          </Typography.Title>
+          <Typography.Text className="page-subtitle">
+            Dùng bộ lọc theo lưới responsive và modal xem chi tiết dễ đọc hơn trên màn hình nhỏ.
+          </Typography.Text>
+        </div>
       </div>
 
-      <Card>
+      <Card className="page-card">
         <div className="filter-grid" style={{ marginBottom: 16 }}>
           <Input.Search
             allowClear
@@ -158,10 +153,11 @@ export function AuditLogPage() {
             options={entityOptions}
           />
 
-          <Space>
+          <Space className="inline-date-range" size={12} style={{ width: '100%' }}>
             <DatePicker
               placeholder="Từ ngày"
               format="DD/MM/YYYY"
+              style={{ width: '100%' }}
               onChange={(value) =>
                 setFilters((prev) => ({
                   ...prev,
@@ -173,6 +169,7 @@ export function AuditLogPage() {
             <DatePicker
               placeholder="Đến ngày"
               format="DD/MM/YYYY"
+              style={{ width: '100%' }}
               onChange={(value) =>
                 setFilters((prev) => ({
                   ...prev,
@@ -185,11 +182,12 @@ export function AuditLogPage() {
         </div>
 
         <Table<AuditLog>
+          className="responsive-table"
           rowKey="id"
           loading={query.isLoading}
           columns={columns}
           dataSource={filteredRows}
-          scroll={{ x: 1000 }}
+          scroll={{ x: 900 }}
           pagination={{
             current: filters.pageNumber,
             pageSize: filters.pageSize,
@@ -215,36 +213,12 @@ export function AuditLogPage() {
         <Space direction="vertical" style={{ width: '100%' }} size={16}>
           <div>
             <Typography.Text strong>OldValue</Typography.Text>
-            <pre
-              style={{
-                background: '#f6f8fa',
-                border: '1px solid #d0d7de',
-                borderRadius: 8,
-                padding: 12,
-                maxHeight: 240,
-                overflow: 'auto',
-                marginTop: 8,
-              }}
-            >
-              {selectedLog?.oldValue || 'null'}
-            </pre>
+            <pre className="modal-code-block">{selectedLog?.oldValue || 'null'}</pre>
           </div>
 
           <div>
             <Typography.Text strong>NewValue</Typography.Text>
-            <pre
-              style={{
-                background: '#f6f8fa',
-                border: '1px solid #d0d7de',
-                borderRadius: 8,
-                padding: 12,
-                maxHeight: 240,
-                overflow: 'auto',
-                marginTop: 8,
-              }}
-            >
-              {selectedLog?.newValue || 'null'}
-            </pre>
+            <pre className="modal-code-block">{selectedLog?.newValue || 'null'}</pre>
           </div>
         </Space>
       </Modal>

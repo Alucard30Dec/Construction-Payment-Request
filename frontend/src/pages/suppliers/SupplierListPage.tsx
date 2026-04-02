@@ -38,21 +38,22 @@ export function SupplierListPage() {
 
   const columns = useMemo(
     () => [
-      { title: 'Mã', dataIndex: 'code', key: 'code' },
+      { title: 'Mã', dataIndex: 'code', key: 'code', responsive: ['sm'] as Array<'sm'> },
       { title: 'Tên nhà cung cấp', dataIndex: 'name', key: 'name' },
-      { title: 'Mã số thuế', dataIndex: 'taxCode', key: 'taxCode' },
-      { title: 'Liên hệ', dataIndex: 'contactPerson', key: 'contactPerson' },
-      { title: 'Điện thoại', dataIndex: 'phone', key: 'phone' },
+      { title: 'Mã số thuế', dataIndex: 'taxCode', key: 'taxCode', responsive: ['lg'] as Array<'lg'> },
+      { title: 'Liên hệ', dataIndex: 'contactPerson', key: 'contactPerson', responsive: ['xl'] as Array<'xl'> },
+      { title: 'Điện thoại', dataIndex: 'phone', key: 'phone', responsive: ['lg'] as Array<'lg'> },
       {
         title: 'Trạng thái',
         key: 'isActive',
+        responsive: ['md'] as Array<'md'>,
         render: (_: unknown, record: Supplier) => (record.isActive ? 'Hoạt động' : 'Ngưng hoạt động'),
       },
       {
         title: 'Thao tác',
         key: 'actions',
         render: (_: unknown, record: Supplier) => (
-          <Space>
+          <Space wrap className="table-actions">
             <Button icon={<EditOutlined />} onClick={() => navigate(`/suppliers/${record.id}/edit`)} />
             <Button
               danger
@@ -73,17 +74,24 @@ export function SupplierListPage() {
   );
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
+    <div className="page-stack">
       <div className="page-header">
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          Nhà cung cấp
-        </Typography.Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/suppliers/new')}>
-          Thêm mới
-        </Button>
+        <div className="page-header__content">
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            Nhà cung cấp
+          </Typography.Title>
+          <Typography.Text className="page-subtitle">
+            Quản lý danh mục nhà cung cấp với bộ lọc gọn, dễ thao tác trên cả desktop và mobile.
+          </Typography.Text>
+        </div>
+        <div className="page-header__actions">
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/suppliers/new')}>
+            Thêm mới
+          </Button>
+        </div>
       </div>
 
-      <Card>
+      <Card className="page-card">
         <div className="filter-grid" style={{ marginBottom: 16 }}>
           <Input.Search
             allowClear
@@ -109,10 +117,12 @@ export function SupplierListPage() {
         </div>
 
         <Table<Supplier>
+          className="responsive-table"
           rowKey="id"
           loading={query.isLoading}
           columns={columns}
           dataSource={query.data?.items ?? []}
+          scroll={{ x: 760 }}
           pagination={{
             current: pageNumber,
             pageSize,

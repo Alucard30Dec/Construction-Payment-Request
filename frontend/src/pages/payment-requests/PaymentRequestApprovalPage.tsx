@@ -1,17 +1,6 @@
 import { CheckOutlined, CloseOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  Button,
-  Card,
-  Form,
-  Input,
-  Modal,
-  Select,
-  Space,
-  Table,
-  Typography,
-  message,
-} from 'antd';
+import { Button, Card, Form, Input, Modal, Select, Space, Table, Typography, message } from 'antd';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { PaymentRequest, PaymentRequestStatus } from '../../types';
@@ -135,10 +124,10 @@ export function PaymentRequestApprovalPage() {
 
   const columns = useMemo(
     () => [
-      { title: 'Mã hồ sơ', dataIndex: 'requestCode', key: 'requestCode' },
+      { title: 'Mã hồ sơ', dataIndex: 'requestCode', key: 'requestCode', responsive: ['sm'] as Array<'sm'> },
       { title: 'Tiêu đề', dataIndex: 'title', key: 'title' },
-      { title: 'Dự án', dataIndex: 'projectName', key: 'projectName' },
-      { title: 'Nhà cung cấp', dataIndex: 'supplierName', key: 'supplierName' },
+      { title: 'Dự án', dataIndex: 'projectName', key: 'projectName', responsive: ['lg'] as Array<'lg'> },
+      { title: 'Nhà cung cấp', dataIndex: 'supplierName', key: 'supplierName', responsive: ['lg'] as Array<'lg'> },
       {
         title: 'Số tiền',
         key: 'requestedAmount',
@@ -148,6 +137,7 @@ export function PaymentRequestApprovalPage() {
       {
         title: 'Hạn thanh toán',
         key: 'dueDate',
+        responsive: ['md'] as Array<'md'>,
         render: (_: unknown, record: PaymentRequest) => formatDate(record.dueDate),
       },
       {
@@ -159,7 +149,7 @@ export function PaymentRequestApprovalPage() {
         title: 'Thao tác',
         key: 'actions',
         render: (_: unknown, record: PaymentRequest) => (
-          <Space wrap>
+          <Space wrap className="table-actions">
             <Button icon={<EyeOutlined />} onClick={() => navigate(`/payment-requests/${record.id}`)} />
             {canApprove(user?.role, record.currentStatus) && (
               <Button
@@ -180,10 +170,7 @@ export function PaymentRequestApprovalPage() {
               </Button>
             )}
             {canRejectOrReturn(user?.role, record.currentStatus) && (
-              <Button
-                icon={<EditOutlined />}
-                onClick={() => setModal({ open: true, action: 'return', record })}
-              >
+              <Button icon={<EditOutlined />} onClick={() => setModal({ open: true, action: 'return', record })}>
                 Trả sửa
               </Button>
             )}
@@ -204,14 +191,19 @@ export function PaymentRequestApprovalPage() {
   const commentRequired = modal.action === 'reject' || modal.action === 'return';
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
+    <div className="page-stack">
       <div className="page-header">
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          Duyệt hồ sơ thanh toán
-        </Typography.Title>
+        <div className="page-header__content">
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            Duyệt hồ sơ thanh toán
+          </Typography.Title>
+          <Typography.Text className="page-subtitle">
+            Danh sách duyệt đã được tinh gọn để thao tác nhanh hơn trên mobile, vẫn giữ nguyên luồng phê duyệt.
+          </Typography.Text>
+        </div>
       </div>
 
-      <Card>
+      <Card className="page-card">
         <div className="filter-grid" style={{ marginBottom: 16 }}>
           <Select
             allowClear
@@ -228,10 +220,12 @@ export function PaymentRequestApprovalPage() {
         </div>
 
         <Table<PaymentRequest>
+          className="responsive-table"
           rowKey="id"
           loading={query.isLoading}
           columns={columns}
           dataSource={query.data?.items ?? []}
+          scroll={{ x: 980 }}
           pagination={{
             current: pageNumber,
             pageSize,

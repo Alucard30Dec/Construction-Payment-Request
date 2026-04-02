@@ -1,16 +1,21 @@
 export function getErrorMessage(error: unknown): string {
-  const fallback = 'Có lỗi xảy ra, vui lòng thử lại.';
+  const fallback = 'Có lỗi hệ thống xảy ra. Vui lòng thử lại.';
 
   if (!error || typeof error !== 'object') {
     return fallback;
   }
 
-  const responseData = (error as {
+  const axiosLikeError = error as {
     response?: {
       data?: unknown;
       status?: number;
     };
-  }).response?.data as
+    request?: unknown;
+    message?: string;
+    code?: string;
+  };
+  const status = axiosLikeError.response?.status;
+  const responseData = axiosLikeError.response?.data as
     | {
         message?: string;
         Message?: string;
@@ -24,6 +29,19 @@ export function getErrorMessage(error: unknown): string {
     return responseData;
   }
 
+  const responseErrors =
+    (typeof responseData === 'object' && responseData !== null && responseData.errors) ||
+    (typeof responseData === 'object' && responseData !== null && responseData.Errors);
+
+  if (responseErrors && typeof responseErrors === 'object') {
+    for (const field of Object.keys(responseErrors)) {
+      const messages = responseErrors[field];
+      if (messages?.length > 0 && messages[0]) {
+        return messages[0];
+      }
+    }
+  }
+
   const responseMessage =
     (typeof responseData === 'object' && responseData !== null && responseData.message) ||
     (typeof responseData === 'object' && responseData !== null && responseData.Message);
@@ -32,29 +50,25 @@ export function getErrorMessage(error: unknown): string {
     return responseMessage;
   }
 
-  const responseErrors =
-    (typeof responseData === 'object' && responseData !== null && responseData.errors) ||
-    (typeof responseData === 'object' && responseData !== null && responseData.Errors);
-
-  if (responseErrors && typeof responseErrors === 'object') {
-    const firstField = Object.keys(responseErrors)[0];
-    if (firstField && responseErrors[firstField]?.length > 0) {
-      return responseErrors[firstField][0];
-    }
+  if (!axiosLikeError.response && axiosLikeError.request) {
+    return 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng hoặc thử lại.';
   }
 
-  const message = (error as { message?: string }).message;
-  const maybeAxiosLike = error as {
-    message?: string;
-    code?: string;
-    request?: unknown;
-    response?: unknown;
-  };
-
-  // Axios thường trả "Network Error" khi backend không chạy/sai URL/CORS bị chặn.
-  if (!maybeAxiosLike.response && maybeAxiosLike.request) {
-    return 'Không kết nối được API. Hãy kiểm tra backend đã chạy tại http://localhost:5000 và mở lại frontend.';
+  if (axiosLikeError.code === 'ECONNABORTED') {
+    return 'Kết nối tới máy chủ bị quá thời gian. Vui lòng thử lại.';
   }
 
-  return message ?? fallback;
+  if (status === 400) {
+    return 'Dữ liệu gửi lên chưa hợp lệ.';
+  }
+
+  if (status === 404) {
+    return 'Không tìm thấy dữ liệu cần xử lý.';
+  }
+
+  if (status === 500) {
+    return fallback;
+  }
+
+  return axiosLikeError.message ?? fallback;
 }

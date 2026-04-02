@@ -7,7 +7,9 @@ public class PaymentConfirmationRequestValidator : AbstractValidator<PaymentConf
 {
     public PaymentConfirmationRequestValidator()
     {
-        RuleFor(x => x.PaymentDate).NotEmpty();
-        RuleFor(x => x.PaidAmount).GreaterThan(0);
+        RuleFor(x => x.PaymentDate)
+            .NotEmpty().WithMessage("Vui lòng chọn ngày thanh toán.");
+        RuleFor(x => x.PaidAmount)
+            .GreaterThan(0).WithMessage("Số tiền thanh toán phải lớn hơn 0.");
     }
 }

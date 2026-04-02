@@ -36,30 +36,37 @@ export function ContractDetailPage() {
   const contract = contractQuery.data;
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
+    <div className="page-stack">
       <div className="page-header">
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          Chi tiết hợp đồng
-        </Typography.Title>
-        <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/contracts')}>
-            Quay lại
-          </Button>
-          {contract && (
-            <Button
-              type="primary"
-              icon={<EditOutlined />}
-              onClick={() => navigate(`/contracts/${contract.id}/edit`)}
-            >
-              Sửa hợp đồng
+        <div className="page-header__content">
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            Chi tiết hợp đồng
+          </Typography.Title>
+          <Typography.Text className="page-subtitle">
+            Trang chi tiết được dàn lại bằng mô tả responsive để không bị vỡ bố cục trên điện thoại.
+          </Typography.Text>
+        </div>
+        <div className="page-header__actions">
+          <Space wrap>
+            <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/contracts')}>
+              Quay lại
             </Button>
-          )}
-        </Space>
+            {contract && (
+              <Button
+                type="primary"
+                icon={<EditOutlined />}
+                onClick={() => navigate(`/contracts/${contract.id}/edit`)}
+              >
+                Sửa hợp đồng
+              </Button>
+            )}
+          </Space>
+        </div>
       </div>
 
-      <Card loading={contractQuery.isLoading}>
+      <Card className="page-card descriptions-responsive" loading={contractQuery.isLoading}>
         {contract && (
-          <Descriptions bordered size="small" column={2}>
+          <Descriptions bordered size="small" column={{ xs: 1, sm: 1, md: 2 }}>
             <Descriptions.Item label="Số hợp đồng">{contract.contractNumber}</Descriptions.Item>
             <Descriptions.Item label="Loại hợp đồng">{contract.contractType}</Descriptions.Item>
             <Descriptions.Item label="Tên hợp đồng" span={2}>
@@ -82,32 +89,35 @@ export function ContractDetailPage() {
         )}
       </Card>
 
-      <Card title="Bản xem trước tệp hợp đồng" loading={contractQuery.isLoading}>
+      <Card className="page-card" title="Bản xem trước tệp hợp đồng" loading={contractQuery.isLoading}>
         <AttachmentPreviewGallery
           attachments={contract?.attachments ?? []}
           emptyText="Chưa có tệp hợp đồng để xem trước."
         />
       </Card>
 
-      <Card title="Danh sách tệp hợp đồng" loading={contractQuery.isLoading}>
+      <Card className="page-card" title="Danh sách tệp hợp đồng" loading={contractQuery.isLoading}>
         <Table<Attachment>
+          className="responsive-table"
           rowKey="id"
           size="small"
           dataSource={contract?.attachments ?? []}
           pagination={false}
+          scroll={{ x: 620 }}
           locale={{ emptyText: 'Chưa có tệp hợp đồng' }}
           columns={[
             { title: 'Tên tệp', dataIndex: 'fileName', key: 'fileName' },
             {
               title: 'Dung lượng',
               key: 'fileSize',
+              responsive: ['sm'],
               render: (_: unknown, record) => formatAttachmentFileSize(record.fileSize),
             },
             {
               title: 'Thao tác',
               key: 'actions',
               render: (_: unknown, record) => (
-                <Space>
+                <Space wrap className="table-actions">
                   <Button
                     icon={<EyeOutlined />}
                     onClick={async () => {

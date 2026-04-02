@@ -6,18 +6,7 @@ import {
   SendOutlined,
 } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  Button,
-  Card,
-  DatePicker,
-  Input,
-  Modal,
-  Select,
-  Space,
-  Table,
-  Typography,
-  message,
-} from 'antd';
+import { Button, Card, DatePicker, Input, Modal, Select, Space, Table, Typography, message } from 'antd';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -92,14 +81,15 @@ export function PaymentRequestListPage() {
 
   const columns = useMemo(
     () => [
-      { title: 'Mã hồ sơ', dataIndex: 'requestCode', key: 'requestCode' },
+      { title: 'Mã hồ sơ', dataIndex: 'requestCode', key: 'requestCode', responsive: ['sm'] as Array<'sm'> },
       { title: 'Tiêu đề', dataIndex: 'title', key: 'title' },
-      { title: 'Dự án', dataIndex: 'projectName', key: 'projectName' },
-      { title: 'Nhà cung cấp', dataIndex: 'supplierName', key: 'supplierName' },
-      { title: 'Số hóa đơn', dataIndex: 'invoiceNumber', key: 'invoiceNumber' },
+      { title: 'Dự án', dataIndex: 'projectName', key: 'projectName', responsive: ['lg'] as Array<'lg'> },
+      { title: 'Nhà cung cấp', dataIndex: 'supplierName', key: 'supplierName', responsive: ['lg'] as Array<'lg'> },
+      { title: 'Số hóa đơn', dataIndex: 'invoiceNumber', key: 'invoiceNumber', responsive: ['xl'] as Array<'xl'> },
       {
         title: 'Hạn thanh toán',
         key: 'dueDate',
+        responsive: ['md'] as Array<'md'>,
         render: (_: unknown, record: PaymentRequest) => formatDate(record.dueDate),
       },
       {
@@ -117,13 +107,10 @@ export function PaymentRequestListPage() {
         title: 'Thao tác',
         key: 'actions',
         render: (_: unknown, record: PaymentRequest) => (
-          <Space wrap>
+          <Space wrap className="table-actions">
             <Button icon={<EyeOutlined />} onClick={() => navigate(`/payment-requests/${record.id}`)} />
             {editableStatuses.includes(record.currentStatus) && (
-              <Button
-                icon={<EditOutlined />}
-                onClick={() => navigate(`/payment-requests/${record.id}/edit`)}
-              />
+              <Button icon={<EditOutlined />} onClick={() => navigate(`/payment-requests/${record.id}/edit`)} />
             )}
             {submittableStatuses.includes(record.currentStatus) && (
               <Button
@@ -158,21 +145,24 @@ export function PaymentRequestListPage() {
   );
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
+    <div className="page-stack">
       <div className="page-header">
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          Hồ sơ thanh toán
-        </Typography.Title>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => navigate('/payment-requests/new')}
-        >
-          Tạo hồ sơ
-        </Button>
+        <div className="page-header__content">
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            Hồ sơ thanh toán
+          </Typography.Title>
+          <Typography.Text className="page-subtitle">
+            Bộ lọc được dàn lại theo lưới co giãn, bảng giữ cột quan trọng trước để dễ dùng trên điện thoại.
+          </Typography.Text>
+        </div>
+        <div className="page-header__actions">
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/payment-requests/new')}>
+            Tạo hồ sơ
+          </Button>
+        </div>
       </div>
 
-      <Card>
+      <Card className="page-card">
         <div className="filter-grid" style={{ marginBottom: 16 }}>
           <Input.Search
             allowClear
@@ -215,6 +205,7 @@ export function PaymentRequestListPage() {
           <DatePicker
             placeholder="Từ ngày"
             format="DD/MM/YYYY"
+            style={{ width: '100%' }}
             onChange={(value) => {
               setPageNumber(1);
               setFromDate(value ? value.toISOString() : undefined);
@@ -223,6 +214,7 @@ export function PaymentRequestListPage() {
           <DatePicker
             placeholder="Đến ngày"
             format="DD/MM/YYYY"
+            style={{ width: '100%' }}
             onChange={(value) => {
               setPageNumber(1);
               setToDate(
@@ -233,10 +225,12 @@ export function PaymentRequestListPage() {
         </div>
 
         <Table<PaymentRequest>
+          className="responsive-table"
           rowKey="id"
           loading={query.isLoading}
           columns={columns}
           dataSource={query.data?.items ?? []}
+          scroll={{ x: 1100 }}
           pagination={{
             current: pageNumber,
             pageSize,

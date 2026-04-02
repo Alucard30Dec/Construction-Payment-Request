@@ -29,8 +29,8 @@ export function DashboardPage() {
   }
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
-      <Card className="dashboard-hero">
+    <div className="page-stack">
+      <Card className="page-card dashboard-hero">
         <div className="dashboard-hero__content">
           <Typography.Title level={3} style={{ marginBottom: 4 }}>
             Bảng điều khiển hồ sơ thanh toán
@@ -43,7 +43,7 @@ export function DashboardPage() {
 
       <Row gutter={[16, 16]}>
         <Col xs={24} md={12} xl={6}>
-          <Card className="dashboard-kpi">
+          <Card className="page-card dashboard-kpi">
             <Typography.Text type="secondary">Tổng hồ sơ</Typography.Text>
             <Typography.Title level={3}>{summary.totalRequests}</Typography.Title>
             <Tag icon={<FileSearchOutlined />} color="blue">
@@ -53,7 +53,7 @@ export function DashboardPage() {
         </Col>
 
         <Col xs={24} md={12} xl={6}>
-          <Card className="dashboard-kpi">
+          <Card className="page-card dashboard-kpi">
             <Typography.Text type="secondary">Chờ duyệt</Typography.Text>
             <Typography.Title level={3}>{summary.pendingApprovalCount}</Typography.Title>
             <Tag icon={<ClockCircleOutlined />} color="orange">
@@ -63,7 +63,7 @@ export function DashboardPage() {
         </Col>
 
         <Col xs={24} md={12} xl={6}>
-          <Card className="dashboard-kpi">
+          <Card className="page-card dashboard-kpi">
             <Typography.Text type="secondary">Đã thanh toán</Typography.Text>
             <Typography.Title level={3}>{summary.paidCount}</Typography.Title>
             <Tag icon={<CheckCircleOutlined />} color="green">
@@ -73,7 +73,7 @@ export function DashboardPage() {
         </Col>
 
         <Col xs={24} md={12} xl={6}>
-          <Card className="dashboard-kpi">
+          <Card className="page-card dashboard-kpi">
             <Typography.Text type="secondary">Tổng tiền đề nghị</Typography.Text>
             <Typography.Title level={4}>{formatCurrency(summary.totalRequestedAmount)}</Typography.Title>
             <Typography.Text type="secondary">
@@ -85,7 +85,7 @@ export function DashboardPage() {
 
       <Row gutter={[16, 16]}>
         <Col xs={24} xl={8}>
-          <Card title="Tỷ lệ phê duyệt">
+          <Card className="page-card" title="Tỷ lệ phê duyệt">
             <Progress
               type="dashboard"
               percent={Number(summary.approvalRatePercent)}
@@ -99,7 +99,7 @@ export function DashboardPage() {
         </Col>
 
         <Col xs={24} xl={8}>
-          <Card title="Tỷ lệ thanh toán">
+          <Card className="page-card" title="Tỷ lệ thanh toán">
             <Progress
               type="dashboard"
               percent={Number(summary.paidRatePercent)}
@@ -113,7 +113,7 @@ export function DashboardPage() {
         </Col>
 
         <Col xs={24} xl={8}>
-          <Card title="Cảnh báo tiến độ">
+          <Card className="page-card" title="Cảnh báo tiến độ">
             <Typography.Paragraph style={{ marginBottom: 8 }}>
               <AlertOutlined style={{ color: '#ef4444', marginRight: 8 }} />
               Quá hạn: <strong>{summary.overdueCount}</strong>
@@ -132,11 +132,13 @@ export function DashboardPage() {
 
       <Row gutter={[16, 16]}>
         <Col xs={24} xl={12}>
-          <Card title="Tổng hồ sơ theo trạng thái">
+          <Card className="page-card" title="Tổng hồ sơ theo trạng thái">
             <Table
+              className="responsive-table"
               rowKey="status"
               size="small"
               pagination={false}
+              scroll={{ x: 420 }}
               dataSource={summary.statusSummaries}
               columns={[
                 { title: 'Trạng thái', dataIndex: 'status', key: 'status' },
@@ -147,11 +149,13 @@ export function DashboardPage() {
         </Col>
 
         <Col xs={24} xl={12}>
-          <Card title="Tổng tiền theo tháng (12 tháng)">
+          <Card className="page-card" title="Tổng tiền theo tháng (12 tháng)">
             <Table
+              className="responsive-table"
               rowKey={(record) => `${record.year}-${record.month}`}
               size="small"
               pagination={false}
+              scroll={{ x: 420 }}
               dataSource={summary.monthlyAmountSummaries}
               columns={[
                 {
@@ -175,11 +179,13 @@ export function DashboardPage() {
 
       <Row gutter={[16, 16]}>
         <Col xs={24} xl={12}>
-          <Card title="Top dự án theo giá trị thanh toán">
+          <Card className="page-card" title="Top dự án theo giá trị thanh toán">
             <Table
+              className="responsive-table"
               rowKey="id"
               size="small"
               pagination={false}
+              scroll={{ x: 420 }}
               dataSource={summary.amountByProject}
               columns={[
                 { title: 'Dự án', dataIndex: 'name', key: 'name' },
@@ -194,11 +200,13 @@ export function DashboardPage() {
           </Card>
         </Col>
         <Col xs={24} xl={12}>
-          <Card title="Top nhà cung cấp theo giá trị thanh toán">
+          <Card className="page-card" title="Top nhà cung cấp theo giá trị thanh toán">
             <Table
+              className="responsive-table"
               rowKey="id"
               size="small"
               pagination={false}
+              scroll={{ x: 420 }}
               dataSource={summary.amountBySupplier}
               columns={[
                 { title: 'Nhà cung cấp', dataIndex: 'name', key: 'name' },
@@ -214,21 +222,24 @@ export function DashboardPage() {
         </Col>
       </Row>
 
-      <Card title="Top hồ sơ quá hạn cần ưu tiên xử lý">
+      <Card className="page-card" title="Top hồ sơ quá hạn cần ưu tiên xử lý">
         <Table
+          className="responsive-table"
           rowKey="id"
           size="small"
           pagination={false}
+          scroll={{ x: 980 }}
           dataSource={summary.topOverdueRequests}
           locale={{ emptyText: 'Không có hồ sơ quá hạn' }}
           columns={[
-            { title: 'Mã hồ sơ', dataIndex: 'requestCode', key: 'requestCode' },
+            { title: 'Mã hồ sơ', dataIndex: 'requestCode', key: 'requestCode', responsive: ['sm'] },
             { title: 'Tiêu đề', dataIndex: 'title', key: 'title' },
-            { title: 'Dự án', dataIndex: 'projectName', key: 'projectName' },
-            { title: 'Nhà cung cấp', dataIndex: 'supplierName', key: 'supplierName' },
+            { title: 'Dự án', dataIndex: 'projectName', key: 'projectName', responsive: ['lg'] },
+            { title: 'Nhà cung cấp', dataIndex: 'supplierName', key: 'supplierName', responsive: ['lg'] },
             {
               title: 'Hạn thanh toán',
               key: 'dueDate',
+              responsive: ['md'],
               render: (_, record) => formatDate(record.dueDate),
             },
             {
@@ -247,7 +258,11 @@ export function DashboardPage() {
               title: 'Chi tiết',
               key: 'actions',
               render: (_, record) => (
-                <Button size="small" icon={<DollarCircleOutlined />} onClick={() => navigate(`/payment-requests/${record.id}`)}>
+                <Button
+                  size="small"
+                  icon={<DollarCircleOutlined />}
+                  onClick={() => navigate(`/payment-requests/${record.id}`)}
+                >
                   Mở hồ sơ
                 </Button>
               ),

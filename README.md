@@ -124,7 +124,7 @@ Kết quả mong đợi:
 - `status = "ok"`: kết nối DB thành công và schema dùng được
 - `configuredProvider`: provider bạn cấu hình trong appsettings
 - `provider`: provider thực tế EF Core đang dùng (nếu fallback SQLite sẽ thấy khác `configuredProvider`)
-- `userCount >= 5` sau khi seed dữ liệu mẫu
+- `userCount >= 9` sau khi seed dữ liệu mẫu
 ### 6.3 Migration thủ công (nếu cần)
 ```bash
 cd backend
@@ -135,6 +135,19 @@ cd backend
 
 ./scripts/dotnetw.sh ef database update \
   --project src/ConstructionPayment.Infrastructure \
+  --startup-project src/ConstructionPayment.Api
+```
+
+PowerShell (Windows):
+```powershell
+cd backend
+./scripts/dotnetw.ps1 tool restore
+./scripts/dotnetw.ps1 ef migrations add <MigrationName> `
+  --project src/ConstructionPayment.Infrastructure `
+  --startup-project src/ConstructionPayment.Api
+
+./scripts/dotnetw.ps1 ef database update `
+  --project src/ConstructionPayment.Infrastructure `
   --startup-project src/ConstructionPayment.Api
 ```
 
@@ -159,6 +172,25 @@ cd backend
 ./scripts/dotnetw.sh run --project src/ConstructionPayment.Api/ConstructionPayment.Api.csproj -- --bootstrap-db
 ```
 
+PowerShell với SQLite local để dựng mới schema + seed nhanh:
+```powershell
+cd backend
+$env:ASPNETCORE_ENVIRONMENT="Development"
+$env:DatabaseProvider="Sqlite"
+$env:ConnectionStrings__SqliteConnection="Data Source=app.dev.seed.db"
+./scripts/dotnetw.ps1 run --project src/ConstructionPayment.Api/ConstructionPayment.Api.csproj -- --bootstrap-db
+```
+
+Reset SQLite dev rồi bootstrap lại bộ dữ liệu mẫu:
+```powershell
+cd backend
+Remove-Item -LiteralPath .\src\ConstructionPayment.Api\app.dev.seed.db -ErrorAction SilentlyContinue
+$env:ASPNETCORE_ENVIRONMENT="Development"
+$env:DatabaseProvider="Sqlite"
+$env:ConnectionStrings__SqliteConnection="Data Source=app.dev.seed.db"
+./scripts/dotnetw.ps1 run --project src/ConstructionPayment.Api/ConstructionPayment.Api.csproj -- --bootstrap-db
+```
+
 ### 6.5 Chạy Development với TiDB (1 lệnh, chống lỗi env ghi đè)
 Script này sẽ:
 1. Ép đúng `ConnectionStrings__MySqlConnection`
@@ -181,10 +213,13 @@ cd backend
 ## 7. Tài khoản mẫu (seed)
 - `admin` / `admin123`
 - `employee` / `employee123`
+- `employee2` / `employee2123`
 - `manager` / `manager123`
+- `manager2` / `manager2123`
 - `director` / `director123`
 - `accountant` / `accountant123`
-- (thêm) `viewer` / `viewer123`
+- `accountant2` / `accountant2123` (inactive demo account)
+- `viewer` / `viewer123`
 
 Bạn có thể đổi mật khẩu seed trong file:
 `backend/src/ConstructionPayment.Infrastructure/Seed/DbSeeder.cs`
@@ -362,7 +397,10 @@ Sau khi deploy `Live`, kiểm tra:
 Tài khoản seed mặc định:
 - `admin / admin123`
 - `employee / employee123`
+- `employee2 / employee2123`
 - `manager / manager123`
+- `manager2 / manager2123`
 - `director / director123`
 - `accountant / accountant123`
+- `accountant2 / accountant2123` (inactive)
 - `viewer / viewer123`

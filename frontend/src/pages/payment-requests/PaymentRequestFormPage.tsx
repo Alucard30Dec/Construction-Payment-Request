@@ -103,7 +103,13 @@ export function PaymentRequestFormPage() {
 
   const supplierLookup = useSupplierLookup();
   const projectLookup = useProjectLookup();
-  const contractLookup = useContractLookup();
+  const selectedProjectId = Form.useWatch('projectId', form);
+  const selectedSupplierId = Form.useWatch('supplierId', form);
+  const selectedContractId = Form.useWatch('contractId', form);
+  const contractLookup = useContractLookup({
+    projectId: selectedProjectId,
+    supplierId: selectedSupplierId,
+  });
 
   const detailQuery = useQuery({
     queryKey: ['payment-request-detail', id],
@@ -128,6 +134,26 @@ export function PaymentRequestFormPage() {
       dueDate: dayjs(detailQuery.data.dueDate),
     });
   }, [detailQuery.data, form]);
+
+  useEffect(() => {
+    if (!selectedContractId) {
+      return;
+    }
+
+    if (!selectedProjectId) {
+      form.setFieldValue('contractId', undefined);
+      return;
+    }
+
+    if (contractLookup.isFetching) {
+      return;
+    }
+
+    const isSelectedContractValid = (contractLookup.data ?? []).some((contract) => contract.id === selectedContractId);
+    if (!isSelectedContractValid) {
+      form.setFieldValue('contractId', undefined);
+    }
+  }, [contractLookup.data, contractLookup.isFetching, form, selectedContractId, selectedProjectId]);
 
   useEffect(
     () => () => {
@@ -434,20 +460,28 @@ export function PaymentRequestFormPage() {
   );
 
   const isSaving = saveMutation.isPending || isUploadingPending;
+  const contractOptions = useMemo(
+    () =>
+      (contractLookup.data ?? []).map((x) => ({
+        label: `${x.contractNumber} - ${x.name}`,
+        value: x.id,
+      })),
+    [contractLookup.data],
+  );
   const firstPendingPreview = useMemo(
     () => pendingAttachments.find((item) => Boolean(item.previewUrl)),
     [pendingAttachments],
   );
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
+    <div className="page-stack">
       <div className="page-header">
         <Typography.Title level={3} style={{ margin: 0 }}>
           {id ? 'Sửa hồ sơ thanh toán' : 'Tạo hồ sơ thanh toán'}
         </Typography.Title>
       </div>
 
-      <Card loading={detailQuery.isLoading && Boolean(id)}>
+      <Card className="page-card" loading={detailQuery.isLoading && Boolean(id)}>
         <Form<PaymentRequestFormValues>
           form={form}
           layout="vertical"
@@ -462,7 +496,7 @@ export function PaymentRequestFormPage() {
           onFinish={(values) => saveMutation.mutate(values)}
         >
           <Typography.Title level={5}>Thông tin chung</Typography.Title>
-          <div className="filter-grid">
+          <div className="form-grid form-grid--wide">
             <Form.Item
               label="Mã hồ sơ"
               name="requestCode"
@@ -494,10 +528,10 @@ export function PaymentRequestFormPage() {
             <Form.Item label="Hợp đồng" name="contractId">
               <Select
                 allowClear
-                options={(contractLookup.data ?? []).map((x) => ({
-                  label: `${x.contractNumber} - ${x.name}`,
-                  value: x.id,
-                }))}
+                disabled={!selectedProjectId}
+                loading={contractLookup.isFetching}
+                options={contractOptions}
+                placeholder={selectedProjectId ? 'Chá»n há»£p Ä‘á»“ng' : 'Chá»n dá»± Ã¡n trÆ°á»›c'}
                 showSearch
                 optionFilterProp="label"
               />
@@ -512,7 +546,7 @@ export function PaymentRequestFormPage() {
 
           <Divider />
           <Typography.Title level={5}>Thông tin hóa đơn</Typography.Title>
-          <div className="filter-grid">
+          <div className="form-grid">
             <Form.Item label="Số hóa đơn" name="invoiceNumber" rules={[{ required: true }]}> 
               <Input />
             </Form.Item>
@@ -530,7 +564,7 @@ export function PaymentRequestFormPage() {
 
           <Divider />
           <Typography.Title level={5}>Giá trị thanh toán</Typography.Title>
-          <div className="filter-grid">
+          <div className="form-grid form-grid--wide">
             <Form.Item label="Trước VAT" name="amountBeforeVat" rules={[{ required: true }]}> 
               <InputNumber style={{ width: '100%' }} min={0} />
             </Form.Item>
