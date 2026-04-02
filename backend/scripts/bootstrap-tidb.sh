@@ -50,6 +50,7 @@ unset DatabaseProvider || true
 
 export ASPNETCORE_ENVIRONMENT=Development
 export DatabaseProvider=MySql
+export Database__AutoMigrateOnStartup=true
 export Database__SeedDemoData=true
 export Database__AllowSqliteFallbackInDevelopment=false
 export ConnectionStrings__MySqlConnection="$MYSQL_CONNECTION_STRING"

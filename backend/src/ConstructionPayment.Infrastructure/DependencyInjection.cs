@@ -88,12 +88,16 @@ public static class DependencyInjection
     private static void ConfigureMySql(DbContextOptionsBuilder options, IConfiguration configuration)
     {
         var mysqlConnection = ResolveMySqlConnectionString(configuration);
-        var serverVersion = ServerVersion.AutoDetect(mysqlConnection);
+        var serverVersion = ResolveMySqlServerVersion(configuration);
+        var maxRetryCount = Math.Max(0, configuration.GetValue<int?>("Database:MySql:MaxRetryCount") ?? 2);
+        var maxRetryDelaySeconds = Math.Max(1, configuration.GetValue<int?>("Database:MySql:MaxRetryDelaySeconds") ?? 2);
+        var efCommandTimeoutSeconds = Math.Max(5, configuration.GetValue<int?>("Database:MySql:EfCommandTimeoutSeconds") ?? 30);
 
         options.UseMySql(mysqlConnection, serverVersion, mySqlOptions =>
         {
             mySqlOptions.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
-            mySqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(5), null);
+            mySqlOptions.EnableRetryOnFailure(maxRetryCount, TimeSpan.FromSeconds(maxRetryDelaySeconds), null);
+            mySqlOptions.CommandTimeout(efCommandTimeoutSeconds);
         });
     }
 
@@ -142,9 +146,10 @@ public static class DependencyInjection
 
                 if (normalized.StartsWith("mysql://", StringComparison.OrdinalIgnoreCase))
                 {
-                    return ConvertMySqlUrlToAdoConnectionString(normalized);
+                    normalized = ConvertMySqlUrlToAdoConnectionString(normalized);
                 }
 
+                normalized = ApplyMySqlConnectionDefaults(normalized, configuration);
                 ValidateAdoConnectionString(normalized);
                 return normalized;
             }
@@ -164,6 +169,57 @@ public static class DependencyInjection
         throw new InvalidOperationException(
             "MySQL connection string is invalid. " +
             string.Join(" | ", errors));
+    }
+
+    private static ServerVersion ResolveMySqlServerVersion(IConfiguration configuration)
+    {
+        var configuredVersion = configuration["Database:MySql:ServerVersion"]?.Trim();
+        if (!string.IsNullOrWhiteSpace(configuredVersion))
+        {
+            return ServerVersion.Parse(configuredVersion, ServerType.MySql);
+        }
+
+        // TiDB tÆ°Æ¡ng thÃ­ch MySQL 8.x. DÃ¹ng version cá»‘ Ä‘á»‹nh tráº¡ng thÃ¡i startup Ä‘á»ƒ trÃ¡nh
+        // ServerVersion.AutoDetect() pháº£i má»Ÿ káº¿t ná»‘i ngay trong giai Ä‘oáº¡n khởi táº¡o DI.
+        return ServerVersion.Create(8, 0, 0, ServerType.MySql);
+    }
+
+    private static string ApplyMySqlConnectionDefaults(string connectionString, IConfiguration configuration)
+    {
+        var builder = new MySqlConnectionStringBuilder(connectionString);
+        var normalized = connectionString;
+
+        if (!ContainsConnectionOption(normalized, "ConnectionTimeout"))
+        {
+            builder.ConnectionTimeout = (uint)Math.Max(3, configuration.GetValue<int?>("Database:MySql:ConnectionTimeoutSeconds") ?? 8);
+        }
+
+        if (!ContainsConnectionOption(normalized, "DefaultCommandTimeout"))
+        {
+            builder.DefaultCommandTimeout = (uint)Math.Max(5, configuration.GetValue<int?>("Database:MySql:DefaultCommandTimeoutSeconds") ?? 30);
+        }
+
+        if (!ContainsConnectionOption(normalized, "Pooling"))
+        {
+            builder.Pooling = true;
+        }
+
+        if (!ContainsConnectionOption(normalized, "MinimumPoolSize"))
+        {
+            builder.MinimumPoolSize = (uint)Math.Max(0, configuration.GetValue<int?>("Database:MySql:MinimumPoolSize") ?? 0);
+        }
+
+        if (!ContainsConnectionOption(normalized, "MaximumPoolSize"))
+        {
+            builder.MaximumPoolSize = (uint)Math.Max(1, configuration.GetValue<int?>("Database:MySql:MaximumPoolSize") ?? 20);
+        }
+
+        if (!ContainsConnectionOption(normalized, "Keepalive"))
+        {
+            builder.Keepalive = (uint)Math.Max(0, configuration.GetValue<int?>("Database:MySql:KeepaliveSeconds") ?? 30);
+        }
+
+        return builder.ConnectionString;
     }
 
     private static string NormalizeMySqlConnectionString(string raw)
@@ -320,6 +376,12 @@ public static class DependencyInjection
         {
             throw new InvalidOperationException("missing Database in ADO.NET connection string.");
         }
+    }
+
+    private static bool ContainsConnectionOption(string connectionString, string optionName)
+    {
+        return connectionString.IndexOf(optionName, StringComparison.OrdinalIgnoreCase) >= 0
+            || connectionString.IndexOf(optionName.Replace("Command", " Command", StringComparison.Ordinal), StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private static bool TryStripPrefixedAssignment(string value, out string stripped)

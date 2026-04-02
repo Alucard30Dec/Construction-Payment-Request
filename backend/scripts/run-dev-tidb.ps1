@@ -1,6 +1,7 @@
 param(
     [string]$MySqlConnectionString = "",
-    [switch]$BootstrapDb
+    [switch]$BootstrapDb,
+    [switch]$RestoreFirst
 )
 
 $ErrorActionPreference = "Stop"
@@ -100,6 +101,7 @@ Remove-Item Env:DatabaseProvider -ErrorAction SilentlyContinue
 
 $env:ASPNETCORE_ENVIRONMENT = "Development"
 $env:DatabaseProvider = "MySql"
+$env:Database__AutoMigrateOnStartup = "false"
 $env:Database__SeedDemoData = "false"
 $env:Database__AllowSqliteFallbackInDevelopment = "false"
 $env:ConnectionStrings__MySqlConnection = $resolvedConnectionString
@@ -109,7 +111,9 @@ Push-Location $backendDir
 try {
     Stop-ConflictingProcesses
 
-    & (Join-Path $scriptDir "dotnetw.ps1") restore ConstructionPayment.sln
+    if ($RestoreFirst) {
+        & (Join-Path $scriptDir "dotnetw.ps1") restore ConstructionPayment.sln
+    }
     if ($BootstrapDb) {
         # Chỉ bootstrap khi chủ động yêu cầu.
         & (Join-Path $scriptDir "dotnetw.ps1") run --project src/ConstructionPayment.Api/ConstructionPayment.Api.csproj -- --bootstrap-db

@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 MYSQL_CONNECTION_STRING="${1:-}"
 BOOTSTRAP_DB="${2:-false}"
+RESTORE_FIRST="${3:-false}"
 
 read_mysql_from_local_config() {
   local backend_dir="$1"
@@ -51,13 +52,16 @@ unset DatabaseProvider || true
 
 export ASPNETCORE_ENVIRONMENT=Development
 export DatabaseProvider=MySql
+export Database__AutoMigrateOnStartup=false
 export Database__SeedDemoData=false
 export Database__AllowSqliteFallbackInDevelopment=false
 export ConnectionStrings__MySqlConnection="$MYSQL_CONNECTION_STRING"
 export ASPNETCORE_URLS=http://localhost:5000
 
 cd "$BACKEND_DIR"
-"$SCRIPT_DIR/dotnetw.sh" restore ConstructionPayment.sln
+if [[ "$RESTORE_FIRST" == "1" || "$RESTORE_FIRST" == "true" || "$RESTORE_FIRST" == "--restore-first" ]]; then
+  "$SCRIPT_DIR/dotnetw.sh" restore ConstructionPayment.sln
+fi
 if [[ "$BOOTSTRAP_DB" == "1" || "$BOOTSTRAP_DB" == "true" || "$BOOTSTRAP_DB" == "--bootstrap-db" ]]; then
   # Chỉ bootstrap khi chủ động yêu cầu.
   "$SCRIPT_DIR/dotnetw.sh" run --project src/ConstructionPayment.Api/ConstructionPayment.Api.csproj -- --bootstrap-db

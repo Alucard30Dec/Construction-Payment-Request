@@ -15,11 +15,30 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 1200,
       rollupOptions: {
         output: {
-          manualChunks: {
-            react: ['react', 'react-dom', 'react-router-dom'],
-            antd: ['antd', '@ant-design/icons'],
-            query: ['@tanstack/react-query'],
-            axios: ['axios'],
+          manualChunks(id) {
+            const normalizedId = id.replace(/\\/g, '/');
+
+            if (!normalizedId.includes('node_modules')) {
+              return undefined;
+            }
+
+            if (
+              normalizedId.includes('/react/') ||
+              normalizedId.includes('/react-dom/') ||
+              normalizedId.includes('/react-router-dom/')
+            ) {
+              return 'react';
+            }
+
+            if (normalizedId.includes('/@tanstack/react-query/')) {
+              return 'query';
+            }
+
+            if (normalizedId.includes('/axios/')) {
+              return 'axios';
+            }
+
+            return undefined;
           },
         },
       },

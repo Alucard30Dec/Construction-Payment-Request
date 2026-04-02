@@ -1,10 +1,10 @@
 import { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { AdminLayout } from './layouts/AdminLayout';
 import { PERMISSIONS } from './constants/permissions';
 
 const LoginPage = lazy(() => import('./pages/auth/LoginPage').then((m) => ({ default: m.LoginPage })));
+const AdminLayout = lazy(() => import('./layouts/AdminLayout').then((m) => ({ default: m.AdminLayout })));
 const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage })));
 const SupplierListPage = lazy(() => import('./pages/suppliers/SupplierListPage').then((m) => ({ default: m.SupplierListPage })));
 const SupplierFormPage = lazy(() => import('./pages/suppliers/SupplierFormPage').then((m) => ({ default: m.SupplierFormPage })));

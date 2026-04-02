@@ -25,18 +25,18 @@ function resolveProviderLabel(health: DatabaseHealth): string {
 export function DatabaseConnectionTag() {
   const dbHealthQuery = useDatabaseHealth();
 
-  if (dbHealthQuery.isLoading) {
+  if (dbHealthQuery.isLoading || (!dbHealthQuery.data && dbHealthQuery.isFetching)) {
     return (
       <Tag icon={<SyncOutlined spin />} color="blue">
-        Đang kiểm tra kết nối DB...
+        Dang cho API/DB san sang...
       </Tag>
     );
   }
 
   if (dbHealthQuery.isError || !dbHealthQuery.data) {
     return (
-      <Tag icon={<ExclamationCircleOutlined />} color="red">
-        API/DB chưa sẵn sàng
+      <Tag icon={dbHealthQuery.isFetching ? <SyncOutlined spin /> : <ExclamationCircleOutlined />} color="red">
+        API/DB chua san sang
       </Tag>
     );
   }
@@ -51,17 +51,17 @@ export function DatabaseConnectionTag() {
         placement="bottom"
       >
         <Tag icon={<DatabaseOutlined />} color="green">
-          Đang kết nối: {providerLabel}
+          Dang ket noi: {providerLabel}
         </Tag>
       </Tooltip>
     );
   }
 
-  const statusText = health.status === 'schema_error' ? 'Lỗi schema DB' : 'DB chưa truy cập được';
+  const statusText = health.status === 'schema_error' ? 'Loi schema DB' : 'DB chua truy cap duoc';
 
   return (
     <Tooltip title={health.message ?? `Configured: ${health.configuredProvider} | Runtime: ${health.provider}`}>
-      <Tag icon={<ExclamationCircleOutlined />} color="orange">
+      <Tag icon={dbHealthQuery.isFetching ? <SyncOutlined spin /> : <ExclamationCircleOutlined />} color="orange">
         {statusText} ({providerLabel})
       </Tag>
     </Tooltip>

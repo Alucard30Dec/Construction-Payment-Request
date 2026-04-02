@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO.Compression;
 using System.Text.Json.Serialization;
 using ConstructionPayment.Application;
@@ -110,6 +111,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[] { "image/svg+xml" });
     options.Providers.Add<BrotliCompressionProvider>();
     options.Providers.Add<GzipCompressionProvider>();
 });
@@ -257,6 +259,7 @@ static async Task RecreateDevelopmentSchemaAsync(
 
 using (var scope = app.Services.CreateScope())
 {
+    var startupDatabaseStopwatch = Stopwatch.StartNew();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasherService>();
     var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("StartupDatabase");
@@ -264,7 +267,10 @@ using (var scope = app.Services.CreateScope())
     var isSqlite = providerName.Contains("Sqlite", StringComparison.OrdinalIgnoreCase);
     var isSqlServer = providerName.Contains("SqlServer", StringComparison.OrdinalIgnoreCase);
     var isMySql = providerName.Contains("MySql", StringComparison.OrdinalIgnoreCase);
-    var shouldAutoMigrate = app.Environment.IsDevelopment() || isSqlite || isSqlServer || isMySql;
+    var configuredAutoMigrateOnStartup = builder.Configuration.GetValue<bool?>("Database:AutoMigrateOnStartup");
+    var shouldAutoMigrate = bootstrapDatabaseOnly
+        || configuredAutoMigrateOnStartup == true
+        || (configuredAutoMigrateOnStartup is null && (app.Environment.IsDevelopment() || isSqlite || isSqlServer || isMySql));
     var enableDemoSeed = builder.Configuration.GetValue<bool?>("Database:SeedDemoData") ?? false;
 
     logger.LogInformation("Database provider hiện tại: {ProviderName}", providerName);
@@ -272,12 +278,6 @@ using (var scope = app.Services.CreateScope())
     if (shouldAutoMigrate)
     {
         await ApplySchemaAsync(dbContext, logger, app.Environment.IsDevelopment(), isMySql, isSqlite);
-    }
-
-    var canConnect = await dbContext.Database.CanConnectAsync();
-    if (!canConnect)
-    {
-        throw new InvalidOperationException($"Không kết nối được database (provider: {providerName}).");
     }
 
     // Kiểm tra schema cốt lõi để tránh app chạy khi DB chưa có bảng quan trọng.
@@ -312,9 +312,17 @@ using (var scope = app.Services.CreateScope())
         }
     }
 
-    var hasAnyUser = await dbContext.Users.AsNoTracking().AnyAsync();
-    var hasAnyRoleProfile = await dbContext.RoleProfiles.AsNoTracking().AnyAsync();
-    var shouldSeedDemoData = bootstrapDatabaseOnly || (enableDemoSeed && (!hasAnyUser || !hasAnyRoleProfile));
+    var hasAnyUser = false;
+    var hasAnyRoleProfile = false;
+    var shouldEvaluateSeedState = bootstrapDatabaseOnly || enableDemoSeed;
+    var shouldSeedDemoData = bootstrapDatabaseOnly;
+
+    if (shouldEvaluateSeedState)
+    {
+        hasAnyUser = await dbContext.Users.AsNoTracking().AnyAsync();
+        hasAnyRoleProfile = await dbContext.RoleProfiles.AsNoTracking().AnyAsync();
+        shouldSeedDemoData = bootstrapDatabaseOnly || (enableDemoSeed && (!hasAnyUser || !hasAnyRoleProfile));
+    }
 
     if (!shouldSeedDemoData)
     {
@@ -357,6 +365,9 @@ using (var scope = app.Services.CreateScope())
             }
         }
     }
+
+    startupDatabaseStopwatch.Stop();
+    logger.LogInformation("Startup database initialization completed in {ElapsedMs} ms.", startupDatabaseStopwatch.ElapsedMilliseconds);
 }
 
 if (bootstrapDatabaseOnly)
@@ -387,10 +398,12 @@ if (hasSpaBuild)
             if (requestPath.StartsWithSegments("/assets"))
             {
                 headers[HeaderNames.CacheControl] = "public, max-age=31536000, immutable";
+                headers[HeaderNames.Vary] = HeaderNames.AcceptEncoding;
                 return;
             }
 
             headers[HeaderNames.CacheControl] = "public, max-age=3600";
+            headers[HeaderNames.Vary] = HeaderNames.AcceptEncoding;
         }
     });
 }
@@ -402,7 +415,7 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok", utc = DateTime.UtcNow }));
-app.MapGet("/health/db", async (AppDbContext dbContext, CancellationToken cancellationToken) =>
+app.MapGet("/health/db", async (bool includeCounts, AppDbContext dbContext, CancellationToken cancellationToken) =>
 {
     var configuredProvider = builder.Configuration["DatabaseProvider"] ?? "not-set";
     var provider = dbContext.Database.ProviderName ?? "unknown";
@@ -421,7 +434,18 @@ app.MapGet("/health/db", async (AppDbContext dbContext, CancellationToken cancel
 
     try
     {
-        var userCount = await dbContext.Users.CountAsync(cancellationToken);
+        if (!includeCounts)
+        {
+            return Results.Ok(new
+            {
+                status = "ok",
+                configuredProvider,
+                provider,
+                utc = DateTime.UtcNow
+            });
+        }
+
+        var userCount = await dbContext.Users.AsNoTracking().CountAsync(cancellationToken);
         return Results.Ok(new
         {
             status = "ok",

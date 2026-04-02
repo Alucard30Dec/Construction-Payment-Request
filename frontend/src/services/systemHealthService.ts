@@ -4,20 +4,21 @@ function resolveHealthUrl(): string {
   const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
 
   if (!configuredBaseUrl || configuredBaseUrl === '/api') {
-    return '/health/db';
+    return '/health/db?includeCounts=false';
   }
 
   if (configuredBaseUrl.startsWith('http://') || configuredBaseUrl.startsWith('https://')) {
-    return configuredBaseUrl.replace(/\/api\/?$/i, '') + '/health/db';
+    return configuredBaseUrl.replace(/\/api\/?$/i, '') + '/health/db?includeCounts=false';
   }
 
-  return '/health/db';
+  return '/health/db?includeCounts=false';
 }
 
 export const systemHealthService = {
   async getDatabaseHealth(signal?: AbortSignal): Promise<DatabaseHealth> {
     const response = await fetch(resolveHealthUrl(), {
       method: 'GET',
+      cache: 'no-store',
       headers: {
         Accept: 'application/json',
       },
